@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>Status: Arachne.fyi</title>
+<meta name="description" content="Is Arachne.fyi up? Live server status, Bazaar price freshness and totals.">
+</head>
+<body>
+<site-header page=""></site-header>
+<main id="main" class="page page-narrow">
+  <div class="page-head">
+    <h1 class="px">Status</h1>
+  </div>
+  <section id="status-card" class="panel status-card" aria-live="polite">
+    <span class="status-dot" aria-hidden="true"></span>
+    <div class="status-text">
+      <p id="status-line" class="px status-line">Checking…</p>
+      <span id="status-checked" class="muted small"></span>
+    </div>
+    <button type="button" id="status-refresh" class="btn btn-ghost">Check again</button>
+  </section>
+  <div id="status" class="tiles"></div>
+</main>
+<site-footer></site-footer>
+<script type="module" src="/src/status.ts"></script>
+</body>
+</html>

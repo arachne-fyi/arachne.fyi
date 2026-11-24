@@ -1,0 +1,49 @@
+/* Download page (/download). Builds on landing.css and site.css (header, footer, buttons, dropdown, tags). */
+
+.dl { max-width: 920px; margin: 0 auto; padding: 56px 24px 96px; display: flex; flex-direction: column; gap: 40px; }
+.dl-intro { display: flex; flex-direction: column; gap: 8px; }
+
+/* Top card: pick a Minecraft version, get its file. */
+.dl-pick { padding: 28px; display: flex; flex-direction: column; gap: 22px; border-color: rgba(255, 138, 31, 0.5); background: rgba(255, 138, 31, 0.06); }
+.dl-fields { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; }
+.dl-field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 240px; }
+.dl-loader { flex: 1 1 180px; }
+.dl-label { font-size: 16px; color: var(--orange-hi); }
+.dl-fixed { min-height: 52px; display: flex; align-items: center; padding: 0 14px; border: 1px dashed rgba(255, 255, 255, 0.14); border-radius: 8px; color: #c4c4cc; font-size: 16px; }
+.dl-rule { height: 1px; background: var(--line); }
+.dl-best { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; }
+.dl-best-info { flex: 1 1 320px; display: flex; flex-direction: column; gap: 4px; }
+.dl-best-name { font-size: 48px; line-height: 1.1; font-weight: 700; overflow-wrap: anywhere; }
+.dl-best-btn { min-height: 56px; padding: 0 28px; text-decoration: none; }
+.dl-best-btn[aria-disabled="true"] { opacity: 0.5; pointer-events: none; }
+
+/* All versions */
+.dl-all { display: flex; flex-direction: column; gap: 14px; }
+.dl-all-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.dl-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.seg { display: flex; gap: 4px; background: rgba(255, 255, 255, 0.04); padding: 4px; border-radius: 10px; }
+.seg button { min-height: 36px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: #c4c4cc; font-size: 16px; cursor: pointer; }
+.seg button:hover { color: var(--text); }
+.seg button[aria-pressed="true"] { background: var(--orange); color: #111; }
+
+.dl-filters .select { min-width: 230px; }
+.dl-list { overflow: hidden; }
+.dl-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 120px 48px; gap: 16px; align-items: center; padding: 12px 18px; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.dl-row:hover { background: rgba(255, 255, 255, 0.03); }
+.dl-row-head { border-top: 0; padding-top: 10px; padding-bottom: 10px; color: var(--muted); font-size: 13px; }
+.dl-row-head:hover { background: none; }
+.dl-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; overflow-wrap: anywhere; }
+.dl-get { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: var(--text); }
+.dl-get:hover { background: rgba(255, 138, 31, 0.18); border-color: var(--orange); color: var(--text); }
+.dl-empty { margin: 0; padding: 24px 18px; }
+
+@media (max-width: 640px) {
+  .dl { padding: 40px 16px 72px; gap: 32px; }
+  .dl-pick { padding: 20px; }
+  .dl-best-name { font-size: 32px; }
+  .dl-best-btn { width: 100%; }
+  .dl-row { grid-template-columns: minmax(0, 1fr) 48px; row-gap: 2px; }
+  .dl-row > :nth-child(2), .dl-row > :nth-child(3) { grid-column: 1; }
+  .dl-row > :nth-child(4) { grid-column: 2; grid-row: 1 / span 3; }
+  .dl-row-head { display: none; }
+}

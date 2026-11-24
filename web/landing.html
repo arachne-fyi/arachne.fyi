@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>Arachne.fyi</title>
+<meta name="description" content="Arachne.fyi: the group profit tracker for Arachne farming on Hypixel SkyBlock.">
+</head>
+<body>
+<!-- Landing page (arachne.fyi), Minecraft-style title screen (18 Nov 2026). Header and footer come from partials/ at build time. The numbers are still made up. Panorama is added by site.ts. -->
+<site-header page=""></site-header>
+
+<main id="main">
+  <section class="mc-title" aria-labelledby="title-h">
+    <h1 id="title-h" class="mc-wordmark">ARACHNE<b>.FYI</b><span class="mc-splash" aria-hidden="true">Now with groups!</span></h1>
+    <p class="mc-tagline">The group profit tracker for Arachne farming. Install the mod, join your co-op, and see who&#39;s carrying the grind.</p>
+    <nav class="mc-stack" aria-label="Start">
+      <a href="/download" class="mc-btn main big">Download the mod</a>
+      <a href="/" class="mc-btn big dashboard-link">Open dashboard</a>
+      <div class="row">
+        <a href="/groups" data-dashboard-path="groups" class="mc-btn">Join with a code</a>
+        <a href="/" data-dashboard-path="pro" class="mc-btn">Get Pro</a>
+      </div>
+    </nav>
+    <p class="mc-facts">Free - Fabric - Minecraft 26.2 and newer - v2.0.0</p>
+  </section>
+
+  <div class="mc-band"><div class="mc-wrap">
+    <span><span class="mc-gold">103,154,513,755</span> coins tracked</span>
+    <span><span class="mc-gold">84,532,123</span> drops</span>
+    <span><span class="mc-gold">150,144</span> Arachne kills</span>
+  </div></div>
+
+  <section class="wrap block" aria-labelledby="stats-h" style="padding-top: 72px;">
+    <h2 id="stats-h" class="px h2-small">This week, across every player</h2>
+    <div class="mc-panel">
+      <div class="mc-slots">
+        <div class="mc-slot"><span class="item"><img src="/icons/coin.svg" alt="" width="32" height="32"></span><span><span class="v">2.41B</span><br><span class="k">Scavenger coins</span></span></div>
+        <div class="mc-slot"><span class="item"><img src="/icons/string.svg" alt="" width="32" height="32"></span><span><span class="v">41,280</span><br><span class="k">Soul String</span></span></div>
+        <div class="mc-slot"><span class="item"><img src="/icons/essence.svg" alt="" width="32" height="32"></span><span><span class="v">18,904</span><br><span class="k">Spider Essence</span></span></div>
+        <div class="mc-slot"><span class="item"><img src="/icons/kill.svg" alt="" width="32" height="32"></span><span><span class="v">8,912</span><br><span class="k">Arachne kills</span></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" class="wrap block" aria-labelledby="how-h">
+    <div class="head">
+      <span class="px eyebrow">How it works</span>
+      <h2 id="how-h" class="px h2">Set up in under two minutes</h2>
+    </div>
+    <ol class="grid grid-3">
+        <li class="panel step">
+          <span class="px step-n" aria-hidden="true">1</span>
+          <h3 class="px h3">Get the mod</h3>
+          <p class="soft">Drop the jar into your Fabric mods folder. It starts tracking on its own.</p>
+          <code class="px code">arachne-fyi.jar</code>
+        </li>
+        <li class="panel step">
+          <span class="px step-n" aria-hidden="true">2</span>
+          <h3 class="px h3">Link your account</h3>
+          <p class="soft">Sign in with Discord and paste your pair code in game chat.</p>
+          <code class="px code">/arachne pair K7Q2XD</code>
+        </li>
+        <li class="panel step">
+          <span class="px step-n" aria-hidden="true">3</span>
+          <h3 class="px h3">Join your group</h3>
+          <p class="soft">Enter your co-op&#x27;s code and your dashboard is live.</p>
+          <code class="px code">WBW8K2</code>
+        </li>
+    </ol>
+  </section>
+
+  <section id="groups" class="wrap block split" aria-labelledby="groups-h">
+    <div class="copy">
+      <span class="px eyebrow">Built for co-ops</span>
+      <h2 id="groups-h" class="px h2">Your whole group, one number</h2>
+      <p class="soft">Share a six-letter code and everyone&#39;s coins, Soul String and Spider Essence add up live. See who&#39;s carrying and how much the group makes per hour.</p>
+      <ul class="bullets">
+        <li>Up to 5 members per group</li>
+        <li>Invite only, public, or open to anyone who meets your requirements</li>
+        <li>Every SkyBlock profile tracked separately</li>
+      </ul>
+    </div>
+    <div class="panel group-card">
+      <div class="group-top">
+        <div>
+          <div class="px muted"><span style="color: var(--orange);">[WEB]</span> Webweavers · today</div>
+          <div class="px group-total">48.2M</div>
+        </div>
+        <span class="px muted">9.6M / hour</span>
+      </div>
+        <div class="member">
+          <span class="px muted">1</span>
+          <span class="px">ollie</span>
+          <span class="bar"><span style="width: 100%" class="top"></span></span>
+          <span class="px right">14.9M</span>
+        </div>
+        <div class="member">
+          <span class="px muted">2</span>
+          <span class="px">Kestrel</span>
+          <span class="bar"><span style="width: 75%"></span></span>
+          <span class="px right">11.2M</span>
+        </div>
+        <div class="member">
+          <span class="px muted">3</span>
+          <span class="px">zeph_</span>
+          <span class="bar"><span style="width: 66%"></span></span>
+          <span class="px right">9.8M</span>
+        </div>
+        <div class="member">
+          <span class="px muted">4</span>
+          <span class="px">Tamsin</span>
+          <span class="bar"><span style="width: 41%"></span></span>
+          <span class="px right">6.1M</span>
+        </div>
+        <div class="member">
+          <span class="px muted">5</span>
+          <span class="px">Noor</span>
+          <span class="bar"><span style="width: 15%"></span></span>
+          <span class="px right">2.2M</span>
+        </div>
+      <span class="muted" style="font-size: 13px;">Example group</span>
+    </div>
+  </section>
+
+  <section id="pro" class="wrap block" aria-labelledby="pro-h">
+    <div class="head">
+      <span class="px eyebrow">Free and Pro</span>
+      <h2 id="pro-h" class="px h2">Free does the job. Pro goes deep.</h2>
+    </div>
+    <div class="grid grid-2">
+      <div class="panel plan">
+        <h3 class="px h3">Free</h3>
+        <span class="px price">$0</span>
+        <ul>
+            <li><span class="tick" aria-hidden="true"></span>Automatic fight, drop and coin tracking</li>
+            <li><span class="tick" aria-hidden="true"></span>Groups and leaderboards</li>
+            <li><span class="tick" aria-hidden="true"></span>Every member and profile</li>
+            <li><span class="tick" aria-hidden="true"></span>Daily and weekly totals</li>
+            <li><span class="tick" aria-hidden="true"></span>Bazaar and NPC pricing</li>
+        </ul>
+        <a href="/download" class="btn btn-ghost">Download the mod</a>
+      </div>
+      <div class="panel plan pro">
+        <h3 class="px h3">Pro</h3>
+        <span class="px price">$4.99<small> one time</small></span>
+        <ul>
+            <li><span class="tick" aria-hidden="true"></span>Everything in Free</li>
+            <li><span class="tick" aria-hidden="true"></span>HD graphs, per fight</li>
+            <li><span class="tick" aria-hidden="true"></span>Projections for your week</li>
+            <li><span class="tick" aria-hidden="true"></span>Your luck against the wiki odds</li>
+            <li><span class="tick" aria-hidden="true"></span>Full member breakdowns</li>
+        </ul>
+        <a href="/" class="btn btn-main" data-dashboard-path="pro">Get Pro</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" class="wrap block faq" aria-labelledby="faq-h">
+    <h2 id="faq-h" class="px h2" style="text-align: center; margin-bottom: 24px;">Questions</h2>
+    <div class="list">
+        <details class="panel">
+          <summary class="px">Is it allowed on Hypixel?<span class="plus" aria-hidden="true">+</span></summary>
+          <p class="soft">It only reads what your game already shows you and never plays for you. Mods outside Hypixel’s allowed list are used at your own risk, so we call it low risk, not zero.</p>
+        </details>
+        <details class="panel">
+          <summary class="px">Do I need an invite?<span class="plus" aria-hidden="true">+</span></summary>
+          <p class="soft">The mod works for everyone and keeps local totals. The dashboard is invite only for now and opens to everyone soon.</p>
+        </details>
+        <details class="panel">
+          <summary class="px">Can my co-op see my numbers?<span class="plus" aria-hidden="true">+</span></summary>
+          <p class="soft">Members of your groups can. You choose whether anyone else can, and you can hide yourself completely.</p>
+        </details>
+        <details class="panel">
+          <summary class="px">Which drops does it price?<span class="plus" aria-hidden="true">+</span></summary>
+          <p class="soft">Every Arachne drop, valued at Bazaar instant sell, sell offer or NPC price. Ironman profiles always use NPC prices.</p>
+        </details>
+    </div>
+  </section>
+
+  <section class="wrap cta">
+    <div class="panel">
+      <h2 class="px h2">Start tracking your next fight</h2>
+      <p class="soft">Free, and it takes under two minutes.</p>
+      <div class="buttons">
+        <a href="/download" class="btn btn-main">Download the mod</a>
+        <a href="/groups" data-dashboard-path="groups" class="btn btn-ghost">Join with a code</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<site-footer></site-footer>
+<script type="module" src="/src/landing.ts"></script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "arachnefyi",
+  "version": "${version}",
+  "name": "Arachne.fyi",
+  "description": "Tracks your Arachne fights, drops and costs and shows them on arachne.fyi.",
+  "authors": ["tkinggidra"],
+  "contact": {
+    "homepage": "https://arachne.fyi",
+    "sources": "https://github.com/tkinggidra/arachne-fyi"
+  },
+  "license": "MIT",
+  "icon": "assets/arachnefyi/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["fyi.arachne.mod.client.ArachneFyi"]
+  },
+  "mixins": ["arachnefyi.mixins.json"],
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "minecraft": ">=${minecraft_version}",
+    "java": ">=25",
+    "fabric-api": ">=${fabric_api_min_version}"
+  }
+}

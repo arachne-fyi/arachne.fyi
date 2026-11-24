@@ -1,0 +1,601 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "accepted": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "duplicates": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "rejected": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "reason"
+        ]
+      }
+    },
+    "ignored": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "serverTime": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "nextPollMs": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "totals": {
+      "type": "object",
+      "properties": {
+        "group": {
+          "type": "object",
+          "properties": {
+            "today": {
+              "type": "object",
+              "properties": {
+                "kills": {
+                  "type": "number"
+                },
+                "fights": {
+                  "type": "number"
+                },
+                "crystals": {
+                  "type": "number"
+                },
+                "callings": {
+                  "type": "number"
+                },
+                "lootValue": {
+                  "type": "number"
+                },
+                "coins": {
+                  "type": "number"
+                },
+                "costs": {
+                  "type": "number"
+                },
+                "profit": {
+                  "type": "number"
+                },
+                "uptimeMs": {
+                  "type": "number"
+                },
+                "wallUptimeMs": {
+                  "type": "number"
+                },
+                "profitPerClientHour": {
+                  "type": "number"
+                },
+                "profitPerWallHour": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "kills",
+                "fights",
+                "crystals",
+                "callings",
+                "lootValue",
+                "coins",
+                "costs",
+                "profit",
+                "uptimeMs",
+                "wallUptimeMs",
+                "profitPerClientHour",
+                "profitPerWallHour"
+              ]
+            },
+            "week": {
+              "type": "object",
+              "properties": {
+                "kills": {
+                  "type": "number"
+                },
+                "fights": {
+                  "type": "number"
+                },
+                "crystals": {
+                  "type": "number"
+                },
+                "callings": {
+                  "type": "number"
+                },
+                "lootValue": {
+                  "type": "number"
+                },
+                "coins": {
+                  "type": "number"
+                },
+                "costs": {
+                  "type": "number"
+                },
+                "profit": {
+                  "type": "number"
+                },
+                "uptimeMs": {
+                  "type": "number"
+                },
+                "wallUptimeMs": {
+                  "type": "number"
+                },
+                "profitPerClientHour": {
+                  "type": "number"
+                },
+                "profitPerWallHour": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "kills",
+                "fights",
+                "crystals",
+                "callings",
+                "lootValue",
+                "coins",
+                "costs",
+                "profit",
+                "uptimeMs",
+                "wallUptimeMs",
+                "profitPerClientHour",
+                "profitPerWallHour"
+              ]
+            },
+            "all": {
+              "type": "object",
+              "properties": {
+                "kills": {
+                  "type": "number"
+                },
+                "fights": {
+                  "type": "number"
+                },
+                "crystals": {
+                  "type": "number"
+                },
+                "callings": {
+                  "type": "number"
+                },
+                "lootValue": {
+                  "type": "number"
+                },
+                "coins": {
+                  "type": "number"
+                },
+                "costs": {
+                  "type": "number"
+                },
+                "profit": {
+                  "type": "number"
+                },
+                "uptimeMs": {
+                  "type": "number"
+                },
+                "wallUptimeMs": {
+                  "type": "number"
+                },
+                "profitPerClientHour": {
+                  "type": "number"
+                },
+                "profitPerWallHour": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "kills",
+                "fights",
+                "crystals",
+                "callings",
+                "lootValue",
+                "coins",
+                "costs",
+                "profit",
+                "uptimeMs",
+                "wallUptimeMs",
+                "profitPerClientHour",
+                "profitPerWallHour"
+              ]
+            }
+          },
+          "required": [
+            "today",
+            "week",
+            "all"
+          ]
+        },
+        "user": {
+          "type": "object",
+          "properties": {
+            "today": {
+              "type": "object",
+              "properties": {
+                "kills": {
+                  "type": "number"
+                },
+                "fights": {
+                  "type": "number"
+                },
+                "crystals": {
+                  "type": "number"
+                },
+                "callings": {
+                  "type": "number"
+                },
+                "lootValue": {
+                  "type": "number"
+                },
+                "coins": {
+                  "type": "number"
+                },
+                "costs": {
+                  "type": "number"
+                },
+                "profit": {
+                  "type": "number"
+                },
+                "uptimeMs": {
+                  "type": "number"
+                },
+                "wallUptimeMs": {
+                  "type": "number"
+                },
+                "profitPerClientHour": {
+                  "type": "number"
+                },
+                "profitPerWallHour": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "kills",
+                "fights",
+                "crystals",
+                "callings",
+                "lootValue",
+                "coins",
+                "costs",
+                "profit",
+                "uptimeMs",
+                "wallUptimeMs",
+                "profitPerClientHour",
+                "profitPerWallHour"
+              ]
+            },
+            "week": {
+              "type": "object",
+              "properties": {
+                "kills": {
+                  "type": "number"
+                },
+                "fights": {
+                  "type": "number"
+                },
+                "crystals": {
+                  "type": "number"
+                },
+                "callings": {
+                  "type": "number"
+                },
+                "lootValue": {
+                  "type": "number"
+                },
+                "coins": {
+                  "type": "number"
+                },
+                "costs": {
+                  "type": "number"
+                },
+                "profit": {
+                  "type": "number"
+                },
+                "uptimeMs": {
+                  "type": "number"
+                },
+                "wallUptimeMs": {
+                  "type": "number"
+                },
+                "profitPerClientHour": {
+                  "type": "number"
+                },
+                "profitPerWallHour": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "kills",
+                "fights",
+                "crystals",
+                "callings",
+                "lootValue",
+                "coins",
+                "costs",
+                "profit",
+                "uptimeMs",
+                "wallUptimeMs",
+                "profitPerClientHour",
+                "profitPerWallHour"
+              ]
+            },
+            "all": {
+              "type": "object",
+              "properties": {
+                "kills": {
+                  "type": "number"
+                },
+                "fights": {
+                  "type": "number"
+                },
+                "crystals": {
+                  "type": "number"
+                },
+                "callings": {
+                  "type": "number"
+                },
+                "lootValue": {
+                  "type": "number"
+                },
+                "coins": {
+                  "type": "number"
+                },
+                "costs": {
+                  "type": "number"
+                },
+                "profit": {
+                  "type": "number"
+                },
+                "uptimeMs": {
+                  "type": "number"
+                },
+                "wallUptimeMs": {
+                  "type": "number"
+                },
+                "profitPerClientHour": {
+                  "type": "number"
+                },
+                "profitPerWallHour": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "kills",
+                "fights",
+                "crystals",
+                "callings",
+                "lootValue",
+                "coins",
+                "costs",
+                "profit",
+                "uptimeMs",
+                "wallUptimeMs",
+                "profitPerClientHour",
+                "profitPerWallHour"
+              ]
+            }
+          },
+          "required": [
+            "today",
+            "week",
+            "all"
+          ]
+        },
+        "account": {
+          "type": "object",
+          "properties": {
+            "today": {
+              "type": "object",
+              "properties": {
+                "kills": {
+                  "type": "number"
+                },
+                "fights": {
+                  "type": "number"
+                },
+                "crystals": {
+                  "type": "number"
+                },
+                "callings": {
+                  "type": "number"
+                },
+                "lootValue": {
+                  "type": "number"
+                },
+                "coins": {
+                  "type": "number"
+                },
+                "costs": {
+                  "type": "number"
+                },
+                "profit": {
+                  "type": "number"
+                },
+                "uptimeMs": {
+                  "type": "number"
+                },
+                "wallUptimeMs": {
+                  "type": "number"
+                },
+                "profitPerClientHour": {
+                  "type": "number"
+                },
+                "profitPerWallHour": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "kills",
+                "fights",
+                "crystals",
+                "callings",
+                "lootValue",
+                "coins",
+                "costs",
+                "profit",
+                "uptimeMs",
+                "wallUptimeMs",
+                "profitPerClientHour",
+                "profitPerWallHour"
+              ]
+            },
+            "week": {
+              "type": "object",
+              "properties": {
+                "kills": {
+                  "type": "number"
+                },
+                "fights": {
+                  "type": "number"
+                },
+                "crystals": {
+                  "type": "number"
+                },
+                "callings": {
+                  "type": "number"
+                },
+                "lootValue": {
+                  "type": "number"
+                },
+                "coins": {
+                  "type": "number"
+                },
+                "costs": {
+                  "type": "number"
+                },
+                "profit": {
+                  "type": "number"
+                },
+                "uptimeMs": {
+                  "type": "number"
+                },
+                "wallUptimeMs": {
+                  "type": "number"
+                },
+                "profitPerClientHour": {
+                  "type": "number"
+                },
+                "profitPerWallHour": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "kills",
+                "fights",
+                "crystals",
+                "callings",
+                "lootValue",
+                "coins",
+                "costs",
+                "profit",
+                "uptimeMs",
+                "wallUptimeMs",
+                "profitPerClientHour",
+                "profitPerWallHour"
+              ]
+            },
+            "all": {
+              "type": "object",
+              "properties": {
+                "kills": {
+                  "type": "number"
+                },
+                "fights": {
+                  "type": "number"
+                },
+                "crystals": {
+                  "type": "number"
+                },
+                "callings": {
+                  "type": "number"
+                },
+                "lootValue": {
+                  "type": "number"
+                },
+                "coins": {
+                  "type": "number"
+                },
+                "costs": {
+                  "type": "number"
+                },
+                "profit": {
+                  "type": "number"
+                },
+                "uptimeMs": {
+                  "type": "number"
+                },
+                "wallUptimeMs": {
+                  "type": "number"
+                },
+                "profitPerClientHour": {
+                  "type": "number"
+                },
+                "profitPerWallHour": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "kills",
+                "fights",
+                "crystals",
+                "callings",
+                "lootValue",
+                "coins",
+                "costs",
+                "profit",
+                "uptimeMs",
+                "wallUptimeMs",
+                "profitPerClientHour",
+                "profitPerWallHour"
+              ]
+            }
+          },
+          "required": [
+            "today",
+            "week",
+            "all"
+          ]
+        }
+      },
+      "required": [
+        "group",
+        "user",
+        "account"
+      ]
+    },
+    "online": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "accepted",
+    "duplicates",
+    "rejected",
+    "serverTime",
+    "nextPollMs",
+    "totals",
+    "online"
+  ]
+}

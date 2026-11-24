@@ -1,0 +1,69 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.17.20'
+}
+
+base {
+    archivesName = 'arachne-fyi'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+    options.encoding = 'UTF-8'
+}
+
+processResources {
+    def metadata = [
+        version: project.version,
+        minecraft_version: minecraft_version,
+        fabric_loader_version: fabric_loader_version,
+        fabric_api_min_version: fabric_api_version.split('\\+')[0]
+    ]
+    inputs.properties metadata
+    filesMatching('fabric.mod.json') {
+        expand metadata
+    }
+}
+
+// Check suites are plain main methods (as in v1.5.0). They cover everything that does not
+// need the running game: chat parsing, the tracker's events, the queue, the HUD text.
+// SyncChecks also talks to a real server when ARACHNE_TEST_ENDPOINT/TOKEN are set.
+['Tracker', 'Queue', 'HudText', 'Sync', 'Local', 'Origin'].each { suite ->
+    def verification = tasks.register("verify${suite}", JavaExec) {
+        group = 'verification'
+        description = "Run the ${suite} checks."
+        dependsOn testClasses
+        classpath = sourceSets.test.runtimeClasspath
+        mainClass = "fyi.arachne.mod.${suite}Checks"
+    }
+    tasks.named('check') { dependsOn verification }
+}
+tasks.named('test') { enabled = false }
+
+// Jars are named arachne-fyi-<mod version>+<Minecraft version>.jar, e.g.
+// arachne-fyi-2.0.0-alpha.1+26.2.jar. The download page groups builds by the part after "+".
+tasks.withType(AbstractArchiveTask).configureEach {
+    archiveVersion = "${project.version}+${minecraft_version}"
+}
+
+// Copies the built jar into the server's download folder, so the dashboard serves it:
+//   ./gradlew build publishToServer -PserverData=../data
+tasks.register('publishToServer', Copy) {
+    dependsOn 'build'
+    from(tasks.named('jar'))
+    into(project.findProperty('serverData') ? "${project.findProperty('serverData')}/downloads" : '../data/downloads')
+}

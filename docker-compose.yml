@@ -1,0 +1,27 @@
+# docker compose up -d --build
+#
+# Two containers: the app, and cloudflared which connects out to Cloudflare so the app is
+# reachable at app.arachne.fyi without opening any router ports. The app's port is only
+# published on 127.0.0.1, so on the local machine you can still open http://localhost:8787.
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+    volumes:
+      - ./data:/data
+    ports:
+      - "127.0.0.1:8787:8787"
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?set TUNNEL_TOKEN in .env (Cloudflare Zero Trust > Networks > Tunnels)}
+    depends_on:
+      - app
+    # Without a token (local testing), start only the app:  docker compose up -d app

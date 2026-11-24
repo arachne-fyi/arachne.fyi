@@ -1,0 +1,577 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{8,64}$"
+        },
+        "ts": {
+          "type": "integer",
+          "minimum": 1500000000000,
+          "maximum": 9999999999999
+        },
+        "origin": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "brand": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "motd": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "host",
+            "brand",
+            "motd"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "const": "SPAWN"
+        },
+        "fight": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$"
+        },
+        "tier": {
+          "type": "string",
+          "enum": [
+            "CRYSTAL",
+            "CALLING",
+            "UNKNOWN"
+          ]
+        },
+        "confirmed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "ts",
+        "kind",
+        "fight",
+        "tier",
+        "confirmed"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{8,64}$"
+        },
+        "ts": {
+          "type": "integer",
+          "minimum": 1500000000000,
+          "maximum": 9999999999999
+        },
+        "origin": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "brand": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "motd": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "host",
+            "brand",
+            "motd"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "const": "DEATH"
+        },
+        "fight": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$"
+        }
+      },
+      "required": [
+        "id",
+        "ts",
+        "kind",
+        "fight"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{8,64}$"
+        },
+        "ts": {
+          "type": "integer",
+          "minimum": 1500000000000,
+          "maximum": 9999999999999
+        },
+        "origin": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "brand": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "motd": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "host",
+            "brand",
+            "motd"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "const": "DAMAGE"
+        },
+        "fight": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$"
+        },
+        "damage": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "id",
+        "ts",
+        "kind",
+        "fight",
+        "damage"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{8,64}$"
+        },
+        "ts": {
+          "type": "integer",
+          "minimum": 1500000000000,
+          "maximum": 9999999999999
+        },
+        "origin": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "brand": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "motd": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "host",
+            "brand",
+            "motd"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "const": "INTERRUPT"
+        },
+        "fight": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "LEFT_AREA",
+            "DISCONNECT",
+            "NEW_RITUAL",
+            "OTHER"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "ts",
+        "kind",
+        "fight",
+        "reason"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{8,64}$"
+        },
+        "ts": {
+          "type": "integer",
+          "minimum": 1500000000000,
+          "maximum": 9999999999999
+        },
+        "origin": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "brand": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "motd": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "host",
+            "brand",
+            "motd"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "const": "PLACE"
+        },
+        "item": {
+          "type": "string",
+          "enum": [
+            "ARACHNE_CRYSTAL",
+            "ARACHNE_KEEPER_FRAGMENT"
+          ]
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "fight": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$"
+        }
+      },
+      "required": [
+        "id",
+        "ts",
+        "kind",
+        "item",
+        "count"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{8,64}$"
+        },
+        "ts": {
+          "type": "integer",
+          "minimum": 1500000000000,
+          "maximum": 9999999999999
+        },
+        "origin": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "brand": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "motd": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "host",
+            "brand",
+            "motd"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "const": "LOOT"
+        },
+        "item": {
+          "type": "string",
+          "pattern": "^[A-Z0-9_;:-]{1,64}$"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000000
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "armor_stand",
+            "pickup",
+            "pet_claim",
+            "manual"
+          ]
+        },
+        "fight": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$"
+        }
+      },
+      "required": [
+        "id",
+        "ts",
+        "kind",
+        "item",
+        "count",
+        "source"
+      ]
+    },
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{8,64}$"
+        },
+        "ts": {
+          "type": "integer",
+          "minimum": 1500000000000,
+          "maximum": 9999999999999
+        },
+        "origin": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "brand": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "motd": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 300
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "host",
+            "brand",
+            "motd"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "const": "COINS"
+        },
+        "amount": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000000000000
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "scavenger",
+            "manual"
+          ]
+        },
+        "fight": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{4,64}$"
+        }
+      },
+      "required": [
+        "id",
+        "ts",
+        "kind",
+        "amount",
+        "source"
+      ]
+    }
+  ]
+}

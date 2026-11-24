@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "number",
+      "const": 1
+    },
+    "account": {
+      "type": "object",
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}$"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_]{1,16}$"
+        }
+      },
+      "required": [
+        "uuid",
+        "name"
+      ]
+    },
+    "mod": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "minecraft": {
+          "type": "string",
+          "maxLength": 32
+        }
+      },
+      "required": [
+        "version",
+        "minecraft"
+      ]
+    },
+    "sentAt": {
+      "type": "integer",
+      "minimum": 1500000000000,
+      "maximum": 9999999999999
+    },
+    "state": {
+      "type": "object",
+      "properties": {
+        "inArea": {
+          "type": "boolean"
+        },
+        "fighting": {
+          "type": "boolean"
+        },
+        "queued": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "inArea",
+        "fighting",
+        "queued"
+      ]
+    },
+    "events": {
+      "maxItems": 500,
+      "type": "array",
+      "items": {}
+    }
+  },
+  "required": [
+    "schema",
+    "account",
+    "mod",
+    "sentAt",
+    "events"
+  ]
+}

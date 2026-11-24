@@ -1,0 +1,279 @@
+/* Arachne.fyi block kit (18 Nov 2026). Mockups: https://claude.ai/artifact/ULuqXo3rDEC7FWmKVkTzzo
+   Every component sits between "@component <name>" and "@end" markers, so it can be copied on its own.
+   Copy "base" once, then any component you need. All sizes are multiples of 2px (one font pixel at 16px). */
+
+/* @component base */
+@font-face { font-family: 'Arachne Pixel'; src: url('/fonts/v2/arachne-regular.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: 'Arachne Pixel'; src: url('/fonts/v2/arachne-bold.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: 'Arachne Pixel'; src: url('/fonts/v2/arachne-italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: block; }
+@font-face { font-family: 'Arachne Pixel'; src: url('/fonts/v2/arachne-bold-italic.woff2') format('woff2'); font-weight: 700; font-style: italic; font-display: block; }
+:root {
+  color-scheme: dark;
+  --px: 2px;                 /* one font pixel at 16px */
+  --ink: #0b0908;            /* outlines and page ground */
+  --text: #f2efe9;
+  --text-shadow: #3a3530;    /* the 1-pixel drop shadow under every label */
+  --soft: #bdb6ab;
+  --muted: #8d867b;
+  --stone: #6c6763;          /* button face */
+  --stone-hi: #a29c95;       /* bevel light edge */
+  --stone-lo: #3b3734;       /* bevel dark edge */
+  --gold: #ffb43c;           /* labels, totals */
+  --orange: #ff8a1f;         /* the brand */
+  --orange-lo: #a34d05;
+  --orange-hi: #ffc77a;
+  --green: #6fd35b;
+  --red: #ff5f52;
+  --panel: rgba(14, 10, 8, 0.86);
+  --panel-edge: #2c1e12;
+  --panel-rim: #6b3a0f;      /* inner rim of a panel */
+  --slot: #1c1916;
+  --font: 'Arachne Pixel', ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--text);
+  font: 16px/1.5 var(--font);
+  font-synthesis: none;
+  -webkit-font-smoothing: none;
+  text-shadow: var(--px) var(--px) 0 var(--text-shadow);
+}
+h1, h2, h3, p { margin: 0; font-weight: 400; }
+code, kbd, pre { font-family: var(--font); font-size: 16px; }
+a { color: var(--gold); }
+a:hover { color: var(--orange-hi); }
+img, canvas { image-rendering: pixelated; }
+.mc-soft { color: var(--soft); }
+.mc-muted { color: var(--muted); }
+.mc-gold { color: var(--gold); }
+.mc-green { color: var(--green); }
+.mc-red { color: var(--red); }
+.mc-wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+:focus-visible { outline: var(--px) solid var(--text); outline-offset: var(--px); }
+/* @end */
+
+/* @component panorama */
+/* The spinning Spider's Den panorama. Needs panorama.js. Falls back to a still image. */
+.mc-panorama { position: fixed; inset: 0; z-index: -1; background: #1a1d1a url('/bg/blur.jpg') center / cover; }
+.mc-panorama canvas { width: 100%; height: 100%; display: block; animation: mc-fade 1.2s ease-out; }
+@keyframes mc-fade { from { opacity: 0; } }
+.mc-panorama::after { content: ""; position: absolute; inset: 0; background: linear-gradient(rgba(8, 6, 5, 0.25), rgba(8, 6, 5, 0.55)); }
+.mc-panorama.dim::after { background: rgba(8, 6, 5, 0.72); }
+/* @end */
+
+/* @component button */
+/* Square, bevelled, black outline. Hover lifts it and turns the outline white. */
+.mc-btn {
+  --face: var(--stone); --hi: var(--stone-hi); --lo: var(--stone-lo); --label: var(--text);
+  display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+  min-height: 44px; padding: 0 24px;
+  font: 16px/1 var(--font); color: var(--label); text-decoration: none; white-space: nowrap;
+  background: var(--face);
+  border: var(--px) solid var(--ink);
+  box-shadow: inset var(--px) var(--px) 0 var(--hi), inset calc(var(--px) * -1) calc(var(--px) * -2) 0 var(--lo);
+  cursor: pointer; user-select: none;
+}
+.mc-btn:hover { --face: #7d7873; --hi: #c4beb6; border-color: var(--text); color: #fff8d8; }
+.mc-btn:active { box-shadow: inset var(--px) var(--px) 0 var(--lo); padding-top: var(--px); }
+.mc-btn:focus-visible { outline: none; border-color: var(--gold); }
+.mc-btn.main { --face: #d9700f; --hi: #ffb15c; --lo: #7c3a04; --label: #fff; }
+.mc-btn.main:hover { --face: #ee8420; --hi: #ffcd8c; }
+.mc-btn[disabled], .mc-btn[disabled]:hover, .mc-btn.is-off { --face: #2c2a28; --hi: #2c2a28; --lo: #2c2a28; --label: #7a746c; text-shadow: none; cursor: not-allowed; border-color: var(--ink); }
+.mc-btn.big { min-height: 52px; font-size: 16px; padding: 0 32px; }
+.mc-btn.wide { width: 100%; }
+.mc-btn.small { min-height: 36px; padding: 0 14px; }
+.mc-btn .ico { width: 16px; height: 16px; flex: none; }
+/* @end */
+
+/* @component button-stack */
+/* Title-screen menu: full-width buttons with a split row underneath. */
+.mc-stack { display: grid; gap: 8px; width: min(400px, 100%); }
+.mc-stack .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* @end */
+
+/* @component panel */
+/* Dark glass box with a two-tone rim. .light is the grey container look for item grids. */
+.mc-panel {
+  background: var(--panel);
+  border: var(--px) solid var(--panel-edge);
+  box-shadow: inset 0 0 0 var(--px) var(--panel-rim), 0 0 0 var(--px) var(--ink);
+  padding: 20px;
+}
+.mc-panel.flat { box-shadow: 0 0 0 var(--px) var(--ink); border-color: #2a2622; }
+.mc-panel.light {
+  background: #c3bdb5; color: #2b2724; text-shadow: none;
+  border: var(--px) solid var(--ink);
+  box-shadow: inset var(--px) var(--px) 0 #f4f0ea, inset calc(var(--px) * -2) calc(var(--px) * -2) 0 #7d7770;
+}
+.mc-panel-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.mc-panel-title h2, .mc-panel-title h3 { font-size: 16px; color: var(--gold); }
+/* @end */
+
+/* @component slot */
+/* Item slot with a count in the corner, like an inventory cell. */
+.mc-slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 8px; }
+.mc-slot {
+  display: grid; grid-template-columns: 40px 1fr; align-items: center; gap: 12px; padding: 10px;
+  background: var(--slot);
+  border: var(--px) solid var(--ink);
+  box-shadow: inset var(--px) var(--px) 0 #000, inset calc(var(--px) * -1) calc(var(--px) * -1) 0 #3d3833;
+  min-width: 0;
+}
+.mc-slot .item { width: 40px; height: 40px; display: grid; place-items: center; background: #2a2622; box-shadow: inset var(--px) var(--px) 0 #120f0d, inset calc(var(--px) * -1) calc(var(--px) * -1) 0 #4a443e; }
+.mc-slot .item svg, .mc-slot .item img { width: 32px; height: 32px; display: block; image-rendering: pixelated; }
+.mc-slot .v { font-size: 16px; color: var(--text); overflow-wrap: anywhere; }
+.mc-slot .k { font-size: 16px; color: var(--muted); }
+/* @end */
+
+/* @component header */
+.mc-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: rgba(10, 8, 7, 0.92); border-bottom: var(--px) solid var(--ink); box-shadow: 0 var(--px) 0 var(--panel-edge); }
+.mc-header .mc-wrap { display: flex; align-items: center; gap: 8px 20px; padding-block: 10px; flex-wrap: wrap; }
+.mc-logo { font-size: 32px; line-height: 1; color: var(--text); text-decoration: none; margin-right: auto; text-shadow: 4px 4px 0 var(--text-shadow); }
+.mc-logo b { color: var(--orange); font-weight: 400; }
+.mc-logo:hover { color: var(--text); }
+.mc-nav { display: flex; flex-wrap: wrap; gap: 4px; }
+@media (max-width: 640px) { .mc-header .mc-wrap { flex-wrap: nowrap; } .mc-logo { font-size: 24px; } .mc-nav { order: 3; flex: 1 0 100%; flex-wrap: nowrap; overflow-x: auto; } .mc-header .mc-wrap { flex-wrap: wrap; } .mc-nav a { white-space: nowrap; padding: 6px 8px; } }
+.mc-nav a { color: var(--soft); text-decoration: none; padding: 8px 10px; border: var(--px) solid transparent; }
+.mc-nav a:hover { color: var(--text); background: rgba(255, 255, 255, 0.06); }
+.mc-nav a[aria-current="page"] { color: var(--gold); border-color: var(--panel-rim); background: rgba(255, 138, 31, 0.08); }
+/* @end */
+
+/* @component splash */
+/* Tilted yellow line that pulses next to the logo. */
+.mc-splash { position: absolute; right: -24px; bottom: -6px; color: #ffff3f; text-shadow: var(--px) var(--px) 0 #3f3f0f; font-size: 16px; white-space: nowrap; transform: rotate(-16deg); transform-origin: center; animation: mc-splash 0.6s ease-in-out infinite alternate; pointer-events: none; }
+@keyframes mc-splash { to { scale: 1.08; } }
+@media (prefers-reduced-motion: reduce) { .mc-splash { animation: none; } }
+/* @end */
+
+/* @component input */
+.mc-field { display: grid; gap: 6px; }
+.mc-field label { color: var(--soft); }
+.mc-input {
+  width: 100%; min-height: 44px; padding: 0 12px;
+  font: 16px var(--font); color: var(--text); text-shadow: var(--px) var(--px) 0 var(--text-shadow);
+  background: #000; border: var(--px) solid #8e8881; border-radius: 0; outline: none;
+}
+.mc-input::placeholder { color: #5f5a54; }
+.mc-input:focus { border-color: var(--text); }
+.mc-input.code { letter-spacing: 4px; text-transform: uppercase; }
+/* @end */
+
+/* @component cycle */
+/* Option button that shows "Name: value" and steps through values on click. Needs the small script in kit.js. */
+.mc-cycle { justify-content: space-between; }
+.mc-cycle .val { color: var(--gold); }
+/* @end */
+
+/* @component check */
+.mc-check { display: inline-flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+.mc-check input { appearance: none; flex: none; width: 24px; height: 24px; margin: 0; background: #000; border: var(--px) solid #8e8881; display: grid; place-items: center; cursor: pointer; }
+.mc-check input:hover { border-color: var(--text); }
+.mc-check input:checked::after { content: ""; width: 12px; height: 12px; background: var(--green); box-shadow: var(--px) var(--px) 0 #1f5a16; }
+/* @end */
+
+/* @component tabs */
+.mc-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.mc-tab { font: 16px var(--font); color: var(--soft); background: #1b1815; border: var(--px) solid var(--ink); border-bottom: 0; padding: 8px 14px 10px; cursor: pointer; text-shadow: inherit; box-shadow: inset var(--px) var(--px) 0 #3d3833; }
+.mc-tab:hover { color: var(--text); }
+.mc-tab[aria-selected="true"] { color: var(--gold); background: var(--panel); box-shadow: inset var(--px) var(--px) 0 var(--panel-rim), inset calc(var(--px) * -1) 0 0 var(--panel-rim); position: relative; top: var(--px); }
+/* @end */
+
+/* @component bar */
+/* Segmented progress bar. Set --v on .fill as a percentage. */
+.mc-bar { height: 12px; background: #000; border: var(--px) solid var(--ink); box-shadow: inset 0 0 0 var(--px) #2b2622; position: relative; overflow: hidden; }
+.mc-bar .fill { position: absolute; inset: var(--px) auto var(--px) var(--px); width: calc(var(--v, 50%) - 4px); background: var(--orange); box-shadow: inset 0 var(--px) 0 var(--orange-hi), inset 0 calc(var(--px) * -1) 0 var(--orange-lo); }
+.mc-bar.green .fill { background: var(--green); box-shadow: inset 0 var(--px) 0 #b4f59f, inset 0 calc(var(--px) * -1) 0 #2f7a22; }
+.mc-bar::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 18px, rgba(0, 0, 0, 0.55) 18px 20px); }
+/* @end */
+
+/* @component leaderboard */
+.mc-board { display: grid; gap: 6px; }
+.mc-board .who { display: grid; grid-template-columns: 24px 32px minmax(0, 1fr) minmax(60px, 1.2fr) auto; gap: 12px; align-items: center; padding: 6px 8px; background: rgba(255, 255, 255, 0.03); }
+.mc-board .who:first-child { background: rgba(255, 138, 31, 0.1); }
+.mc-board .n { color: var(--muted); }
+.mc-board .who:first-child .n { color: var(--gold); }
+.mc-board .head { width: 32px; height: 32px; box-shadow: 0 0 0 var(--px) var(--ink); }
+.mc-board .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-board .amt { text-align: right; color: var(--gold); font-variant-numeric: tabular-nums; }
+@media (max-width: 520px) { .mc-board .who { grid-template-columns: 20px 32px minmax(0, 1fr) auto; } .mc-board .who .mc-bar { display: none; } }
+/* @end */
+
+/* @component chat */
+/* Kill feed in the style of game chat: dark strip, coloured parts. */
+.mc-chat { display: grid; gap: 2px; font-size: 16px; }
+.mc-chat p { background: rgba(0, 0, 0, 0.5); padding: 4px 8px; overflow-wrap: anywhere; }
+.mc-chat .t { color: var(--muted); }
+.mc-chat .p { color: #55ffff; }
+.mc-chat .c { color: var(--gold); }
+.mc-chat .s { color: #e8e8e8; }
+.mc-chat .e { color: #d68cff; }
+/* @end */
+
+/* @component toast */
+/* Slides in at the top right, like an in-game notice. */
+.mc-toast { display: grid; grid-template-columns: 40px 1fr; gap: 4px 14px; align-items: center; width: min(320px, 100%); padding: 12px 14px; background: #1a1411; border: var(--px) solid var(--ink); box-shadow: inset 0 0 0 var(--px) #5a4a3a, inset 0 0 0 calc(var(--px) * 2) #120d0a; }
+.mc-toast .item { grid-row: span 2; }
+.mc-toast .t1 { color: var(--gold); }
+.mc-toast.pop { position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); z-index: 30; animation: mc-toast 5s steps(12) forwards; }
+@keyframes mc-toast { 0% { translate: 120% 0; } 8%, 85% { translate: 0 0; } 100% { translate: 120% 0; } }
+@media (prefers-reduced-motion: reduce) { .mc-toast.pop { animation: none; } }
+/* @end */
+
+/* @component list */
+/* Selection list (like a world list): rows you click to select. */
+.mc-list { background: rgba(0, 0, 0, 0.55); border: var(--px) solid var(--ink); box-shadow: inset 0 0 0 var(--px) #2b2622; padding: 6px; display: grid; gap: 4px; max-height: 420px; overflow-y: auto; }
+.mc-list .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: center; padding: 8px 10px; border: var(--px) solid transparent; cursor: pointer; text-align: left; font: inherit; color: inherit; background: none; text-shadow: inherit; width: 100%; }
+.mc-list .row:hover { background: rgba(255, 255, 255, 0.05); }
+.mc-list .row[aria-selected="true"] { border-color: #c9c3bb; background: rgba(0, 0, 0, 0.4); }
+.mc-list .sub { color: var(--muted); grid-column: 1; }
+.mc-list .side { grid-row: span 2; }
+/* @end */
+
+/* @component badge */
+.mc-badge { display: inline-block; padding: 2px 8px; font-size: 16px; line-height: 1.25; border: var(--px) solid currentColor; }
+.mc-badge.release { color: var(--green); }
+.mc-badge.beta { color: #ffd23f; }
+.mc-badge.nightly { color: #d68cff; }
+.mc-badge.pro { color: var(--orange); background: rgba(255, 138, 31, 0.12); }
+/* @end */
+
+/* @component chart */
+/* Blocky column chart: each column is a stack of 8px blocks. Set --h on each <i>. */
+.mc-chart { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); align-items: end; gap: 4px; height: 160px; padding: 8px; background: rgba(0, 0, 0, 0.45); box-shadow: inset 0 0 0 var(--px) #2b2622; }
+.mc-chart i { display: block; height: var(--h); background: repeating-linear-gradient(0deg, var(--orange) 0 6px, var(--orange-lo) 6px 8px); box-shadow: inset var(--px) 0 0 var(--orange-hi); }
+.mc-chart i.now { background: repeating-linear-gradient(0deg, var(--gold) 0 6px, #9a6510 6px 8px); }
+.mc-axis { display: flex; justify-content: space-between; color: var(--muted); padding: 4px 8px 0; }
+/* @end */
+
+/* @component title-screen */
+/* Landing hero: big wordmark with a splash, tagline, the title menu, a small facts line. */
+.mc-title { display: grid; justify-items: center; gap: 28px; text-align: center; padding: 88px max(16px, env(safe-area-inset-right, 0px)) 72px max(16px, env(safe-area-inset-left, 0px)); overflow: hidden; }
+.mc-wordmark { position: relative; margin: 0 0 20px; font-size: 64px; line-height: 1; font-weight: 700; letter-spacing: 2px; color: var(--text); text-shadow: 8px 8px 0 #2a1607; }
+.mc-wordmark b { color: var(--orange); font-weight: 700; }
+.mc-tagline { max-width: 560px; margin: 0; color: var(--soft); text-wrap: balance; }
+.mc-facts { margin: 0; color: var(--muted); }
+@media (max-width: 560px) {
+  .mc-title { padding-block: 56px 48px; }
+  .mc-wordmark { font-size: 32px; text-shadow: 4px 4px 0 #2a1607; }
+  .mc-wordmark .mc-splash { right: 0; bottom: -26px; }
+}
+/* @end */
+
+/* @component band */
+/* Full-width dark strip, e.g. the running totals under the title screen. */
+.mc-band { background: rgba(10, 8, 7, 0.85); border-block: var(--px) solid var(--ink); }
+.mc-band .mc-wrap { display: flex; flex-wrap: wrap; gap: 8px 32px; justify-content: center; padding-block: 14px; }
+.mc-band span { white-space: nowrap; }
+/* @end */
+
+/* @component footer */
+/* Two corners, like the title screen: version on the left, copyright on the right. */
+.mc-footer { border-top: var(--px) solid var(--ink); box-shadow: 0 calc(var(--px) * -1) 0 var(--panel-edge); background: rgba(10, 8, 7, 0.9); }
+.mc-footer .mc-wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; padding-block: 20px; }
+.mc-footer nav { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.mc-footer a { color: var(--soft); text-decoration: none; }
+.mc-footer a:hover { color: var(--text); }
+.mc-corner { color: var(--muted); }
+/* @end */

@@ -1,0 +1,178 @@
+@import './mc.css';
+/* Minecraft-style skin (18 Nov 2026). Loaded last on every page (site.ts and main.tsx).
+   It restyles the classes the pages already use, so markup did not have to change.
+   The block kit itself (mc-* classes, copy-paste components) is in mc.css.
+   Every selector below gets ":root body" in front (built by the generator), so it wins over
+   landing.css, site.css, download.css and dash.css without !important. */
+
+/* ---- everything square, everything pixel ---- */
+:root body *, :root body *::before, :root body *::after { border-radius: 0 !important; }
+:root body { font-family: var(--font); font-synthesis: none; -webkit-font-smoothing: none; text-shadow: var(--px) var(--px) 0 var(--text-shadow); background: var(--ink); }
+:root body input, :root body select, :root body textarea, :root body button { font-family: var(--font); }
+:root body code, :root body .code, :root body .mono, :root body .code-line, :root body .code-box { font-family: var(--font); font-size: 16px; }
+:root body code { background: #000; padding: 0 6px; box-shadow: inset 0 0 0 var(--px) #2b2622; }
+:root body .small, :root body .tiny, :root body .muted.small, :root body .tile-label, :root body .tile-sub, :root body .card-side, :root body .axis, :root body .sec-note, :root body .signin-small, :root body .file-name, :root body .legal-line, :root body .table, :root body .table th, :root body .dfoot-in, :root body .banner-in, :root body .tip, :root body .legend span, :root body .mono { font-size: 16px; }
+:root body .legal-line { text-transform: none; letter-spacing: 0; }
+:root body .soft, :root body .prose, :root body .lede { color: var(--soft); }
+:root body .muted { color: var(--muted); }
+:root body a { color: var(--gold); }
+:root body a:hover { color: var(--orange-hi); }
+:root body :focus-visible { outline: var(--px) solid var(--text); outline-offset: var(--px); }
+:root body .skip { background: var(--gold); color: #111; text-shadow: none; }
+
+/* ---- buttons ---- */
+:root body .btn, :root body .nav-toggle, :root body .coinbtn, :root body .paybtn, :root body .dl-get, :root body .sb-kind {
+  --face: var(--stone); --hi: var(--stone-hi); --lo: var(--stone-lo);
+  background: var(--face); color: var(--text);
+  border: var(--px) solid var(--ink);
+  box-shadow: inset var(--px) var(--px) 0 var(--hi), inset calc(var(--px) * -1) calc(var(--px) * -2) 0 var(--lo);
+  font-family: var(--font); font-size: 16px; font-weight: 400;
+  text-shadow: var(--px) var(--px) 0 var(--text-shadow);
+}
+:root body .btn:hover, :root body .nav-toggle:hover, :root body .coinbtn:hover, :root body .paybtn:hover, :root body .dl-get:hover, :root body .sb-kind:hover { --face: #7d7873; --hi: #c4beb6; border-color: var(--text); color: #fff8d8; background: var(--face); }
+:root body .btn:active, :root body .coinbtn:active, :root body .paybtn:active { box-shadow: inset var(--px) var(--px) 0 var(--lo); }
+:root body .btn.btn-main, :root body a.btn.btn-main, :root body a.btn.btn-main:hover { --face: #d9700f; --hi: #ffb15c; --lo: #7c3a04; color: #fff; }
+:root body .btn.btn-main:hover { --face: #ee8420; --hi: #ffcd8c; }
+:root body .btn.btn-ghost, :root body a.btn.btn-ghost { color: var(--text); }
+:root body .btn.btn-danger { --face: #8a2a22; --hi: #c4544a; --lo: #4a120d; color: #ffe0dc; }
+:root body .btn.btn-danger:hover { --face: #a3342a; --hi: #e0685d; }
+:root body .btn[disabled], :root body .btn:disabled, :root body .btn[aria-disabled="true"], :root body .dl-best-btn[aria-disabled="true"] { --face: #2c2a28; --hi: #2c2a28; --lo: #2c2a28; color: #7a746c; text-shadow: none; opacity: 1; border-color: var(--ink); }
+:root body .coinbtn[aria-pressed="true"], :root body .sb-kind[aria-pressed="true"] { --face: #d9700f; --hi: #ffb15c; --lo: #7c3a04; color: #fff; border-color: var(--ink); }
+:root body .paybtn.pay-apple, :root body .paybtn.pay-google { font-weight: 400; }
+:root body .linkbtn { color: var(--gold); font-family: var(--font); }
+:root body .nav-toggle svg { filter: drop-shadow(2px 2px 0 var(--text-shadow)); }
+
+/* Segmented choices become a row of small option buttons. */
+:root body .seg { background: none; padding: 0; gap: 4px; }
+:root body .seg button {
+  --face: var(--stone); --hi: var(--stone-hi); --lo: var(--stone-lo);
+  background: var(--face); color: var(--text);
+  border: var(--px) solid var(--ink);
+  box-shadow: inset var(--px) var(--px) 0 var(--hi), inset calc(var(--px) * -1) calc(var(--px) * -2) 0 var(--lo);
+  text-shadow: var(--px) var(--px) 0 var(--text-shadow);
+}
+:root body .seg button:hover { --face: #7d7873; --hi: #c4beb6; border-color: var(--text); color: #fff8d8; }
+:root body .seg button[aria-pressed="true"] { --face: #d9700f; --hi: #ffb15c; --lo: #7c3a04; background: var(--face); color: #fff; }
+
+/* ---- panels ---- */
+:root body .panel, :root body .card, :root body .menu, :root body .dd-list, :root body .lock-box, :root body .signin, :root body .sb-pick, :root body .stream-box {
+  background: var(--panel);
+  border: var(--px) solid var(--panel-edge);
+  box-shadow: inset 0 0 0 var(--px) var(--panel-rim), 0 0 0 var(--px) var(--ink);
+}
+:root body .menu, :root body .dd-list { background: rgba(16, 11, 8, 0.97); }
+:root body .plan.pro, :root body .pro-buy, :root body .dl-pick { border-color: #4a2a0c; box-shadow: inset 0 0 0 var(--px) var(--orange), 0 0 0 var(--px) var(--ink); background: var(--panel); }
+:root body .cta .panel { background: var(--panel); border-color: #4a2a0c; box-shadow: inset 0 0 0 var(--px) var(--orange), 0 0 0 var(--px) var(--ink); }
+:root body .note { background: rgba(14, 10, 8, 0.9); border: var(--px) solid var(--ink); box-shadow: inset 0 0 0 var(--px) var(--orange-lo); color: var(--soft); }
+:root body .note.bad { box-shadow: inset 0 0 0 var(--px) #8a2a22; color: #ffc9c4; }
+:root body .banner { background: rgba(26, 14, 4, 0.95); border-bottom: var(--px) solid var(--orange-lo); color: var(--soft); }
+:root body .banner.info { background: rgba(10, 8, 7, 0.92); border-color: var(--ink); }
+:root body .tip { background: rgba(16, 11, 8, 0.97); border: var(--px) solid var(--ink); box-shadow: inset 0 0 0 var(--px) var(--panel-rim); }
+:root body .card-title, :root body .field-label, :root body .dl-label, :root body .release-body h3 { color: var(--gold); }
+:root body .sec-title, :root body .dh1, :root body .dh2, :root body .h2, :root body .h3, :root body .page-head h1, :root body .prof-name, :root body .status-line { text-shadow: 4px 4px 0 var(--text-shadow); }
+:root body .h3 { text-shadow: var(--px) var(--px) 0 var(--text-shadow); }
+
+/* Big numbers: gold, chunky shadow. */
+:root body .big-total, :root body .group-total, :root body .stat-value, :root body .price, :root body .pro-price .px:first-child, :root body .dl-best-name, :root body .tile-big, :root body .tile-value.hot, :root body .pro-amount { color: var(--gold); text-shadow: 4px 4px 0 #3a2a10; font-weight: 700; }
+
+/* ---- header ---- */
+:root body .top-bar, :root body .dtop { background: rgba(10, 8, 7, 0.94); backdrop-filter: none; border-bottom: var(--px) solid var(--ink); box-shadow: 0 var(--px) 0 var(--panel-edge); }
+:root body .logo { color: var(--text); text-shadow: 4px 4px 0 var(--text-shadow); }
+:root body .logo span { color: var(--orange); }
+:root body .nl, :root body .dtab, :root body .toc a, :root body .mi { color: var(--soft); border: var(--px) solid transparent; }
+:root body .nl:hover, :root body .dtab:hover, :root body .toc a:hover, :root body .mi:hover { color: var(--text); background: rgba(255, 255, 255, 0.06); }
+:root body .top-bar .nl[aria-current="page"], :root body .dtab[aria-current="page"], :root body .mi[aria-current="true"] { color: var(--gold); border-color: var(--panel-rim); background: rgba(255, 138, 31, 0.08); }
+:root body .chipbtn { background: #000; border: var(--px) solid #8e8881; }
+:root body .chipbtn:hover, :root body .chipbtn[aria-expanded="true"] { border-color: var(--text); }
+:root body .chev { border-color: var(--gold); }
+:root body .menu hr { height: var(--px); background: #231d18; }
+:root body .av, :root body .av.head, :root body .sign-in img, :root body .who img, :root body .acct-head img, :root body .prof-head img { image-rendering: pixelated; box-shadow: 0 0 0 var(--px) var(--ink); }
+
+/* ---- footer ---- */
+:root body footer, :root body .dfoot { background: rgba(10, 8, 7, 0.94); border-top: var(--px) solid var(--ink); box-shadow: 0 calc(var(--px) * -1) 0 var(--panel-edge); }
+:root body .foot nav a, :root body .dfoot a { color: var(--soft); }
+:root body .foot nav a:hover, :root body .dfoot a:hover { color: var(--text); }
+:root body .foot nav strong { color: var(--gold); }
+:root body .foot-brand span { color: var(--muted); }
+
+/* ---- form controls ---- */
+:root body .input, :root body .dd-button, :root body .dl-fixed, :root body .pro-for { background: #000; border: var(--px) solid #8e8881; color: var(--text); text-shadow: var(--px) var(--px) 0 var(--text-shadow); }
+:root body .input:hover, :root body .dd-button:hover { border-color: #c9c3bb; }
+:root body .input:focus, :root body .dd-button[aria-expanded="true"] { border-color: var(--text); }
+:root body .dl-fixed { border-style: dashed; border-color: #5a554f; color: var(--soft); }
+:root body .dd-button::after { border-color: var(--gold); }
+:root body .dd-option { color: var(--soft); }
+:root body .dd-option.dd-active { background: rgba(255, 255, 255, 0.08); color: var(--text); box-shadow: inset 0 0 0 var(--px) #c9c3bb; }
+:root body .dd-option[aria-selected="true"]::before { border-color: var(--green); }
+:root body .dd-badge, :root body .gtag, :root body .tag, :root body .badge, :root body .live-tag { background: none; border: var(--px) solid currentColor; font-size: 16px; line-height: 1.25; padding: 0 6px; font-family: var(--font); }
+:root body .gtag, :root body .dd-badge, :root body .tag-latest { color: var(--orange); background: rgba(255, 138, 31, 0.12); }
+:root body .tag-release, :root body .live-tag { color: var(--green); }
+:root body .tag-beta { color: #ffd23f; }
+:root body .tag-nightly { color: #d68cff; }
+:root body .check input { background: #000; border: var(--px) solid #8e8881; }
+:root body .check input:hover { border-color: var(--text); }
+:root body .check input:checked { background: #000; border-color: #8e8881; }
+:root body .check input:checked::after { width: 12px; height: 12px; border: 0; transform: none; background: var(--green); box-shadow: var(--px) var(--px) 0 #1f5a16; }
+:root body .toggle { background: #000; border: var(--px) solid #8e8881; }
+:root body .toggle-knob { background: var(--stone); box-shadow: inset var(--px) var(--px) 0 var(--stone-hi), inset calc(var(--px) * -1) calc(var(--px) * -1) 0 var(--stone-lo); }
+:root body .toggle[aria-checked="true"] { background: rgba(111, 211, 91, 0.2); border-color: var(--green); }
+:root body .toggle[aria-checked="true"] .toggle-knob { background: var(--green); box-shadow: inset var(--px) var(--px) 0 #b4f59f, inset calc(var(--px) * -1) calc(var(--px) * -1) 0 #2f7a22; }
+:root body .chip, :root body .req { border: var(--px) solid #3a332d; color: var(--soft); background: rgba(0, 0, 0, 0.4); }
+:root body .chip:hover, :root body .chip[aria-current="page"] { color: var(--gold); border-color: var(--panel-rim); background: rgba(255, 138, 31, 0.08); }
+
+/* ---- code boxes ---- */
+:root body .code, :root body .code-line, :root body .code-box { background: #000; color: var(--gold); box-shadow: inset 0 0 0 var(--px) #2b2622; }
+
+/* ---- numbers, bars, charts ---- */
+:root body .step-n, :root body .steps li::before { background: var(--orange); color: #fff; border: var(--px) solid var(--ink); box-shadow: inset var(--px) var(--px) 0 var(--orange-hi), inset calc(var(--px) * -1) calc(var(--px) * -1) 0 var(--orange-lo); }
+:root body .steps li.done::before { background: var(--green); box-shadow: inset var(--px) var(--px) 0 #b4f59f, inset calc(var(--px) * -1) calc(var(--px) * -1) 0 #2f7a22; }
+:root body .tick { border-color: var(--green); }
+:root body .bullets li::before { background: var(--gold); box-shadow: var(--px) var(--px) 0 #3a2a10; }
+:root body .bar { height: 12px; background: #000; border: var(--px) solid var(--ink); box-shadow: inset 0 0 0 var(--px) #2b2622; position: relative; }
+:root body .bar > span { box-shadow: inset 0 var(--px) 0 rgba(255, 255, 255, 0.35), inset 0 calc(var(--px) * -1) 0 rgba(0, 0, 0, 0.35); }
+:root body .bar::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 18px, rgba(0, 0, 0, 0.55) 18px 20px); pointer-events: none; }
+:root body .hours { gap: 4px; padding: 8px; background: rgba(0, 0, 0, 0.45); border-bottom: 0; box-shadow: inset 0 0 0 var(--px) #2b2622; }
+:root body .hours > span { background: repeating-linear-gradient(0deg, var(--orange) 0 6px, var(--orange-lo) 6px 8px); box-shadow: inset var(--px) 0 0 var(--orange-hi); }
+:root body .hours > span.now { background: repeating-linear-gradient(0deg, var(--gold) 0 6px, #9a6510 6px 8px); }
+:root body div.split { background: #000; box-shadow: inset 0 0 0 var(--px) #2b2622; }
+:root body .dot { box-shadow: var(--px) var(--px) 0 rgba(0, 0, 0, 0.6); }
+:root body .dot-on { background: var(--green); }
+:root body .status-dot { box-shadow: none; }
+:root body .status-card.up .status-dot { background: var(--green); box-shadow: var(--px) var(--px) 0 #1f5a16; }
+:root body .status-card.down .status-dot { background: var(--red); box-shadow: var(--px) var(--px) 0 #5a1612; }
+
+/* Resource icons on the dashboard become item slots. */
+:root body .ico { width: 48px; height: 48px; font-size: 0; color: transparent; text-shadow: none; background: #2a2622 center / 32px 32px no-repeat; box-shadow: 0 0 0 var(--px) var(--ink), inset var(--px) var(--px) 0 #120f0d, inset calc(var(--px) * -1) calc(var(--px) * -1) 0 #4a443e; image-rendering: pixelated; }
+:root body .ico-coins { background-image: url('/icons/coin.svg'); }
+:root body .ico-string { background-image: url('/icons/string.svg'); }
+:root body .ico-essence { background-image: url('/icons/essence.svg'); }
+:root body .ico-kills { background-image: url('/icons/kill.svg'); }
+
+/* ---- lists and rows ---- */
+:root body .mrow { border: var(--px) solid transparent; }
+:root body a.mrow:hover { background: rgba(255, 255, 255, 0.05); border-color: #3a332d; }
+:root body .kill { background: rgba(0, 0, 0, 0.5); padding: 4px 8px; border-bottom: 0; }
+:root body .kill:last-child { padding-bottom: 4px; }
+:root body .r, :root body .table td, :root body .setting, :root body .dl-row, :root body .pro-free, :root body .ticker .r { border-top: var(--px) solid #231d18; }
+:root body .dl-list { background: rgba(0, 0, 0, 0.55); border: var(--px) solid var(--ink); box-shadow: inset 0 0 0 var(--px) #2b2622; }
+:root body .dl-row:hover { background: rgba(255, 255, 255, 0.05); }
+:root body .dl-rule, :root body .signin-rule, :root body .or::before, :root body .or::after { height: var(--px); background: #231d18; }
+:root body summary { color: var(--text); }
+:root body .plus { color: var(--gold); }
+:root body .who { background: rgba(0, 0, 0, 0.45); box-shadow: inset 0 0 0 var(--px) #2b2622; }
+
+/* ---- page backgrounds: the panorama shows through ---- */
+:root body .hero, :root body .signin-page { background-image: none; border-bottom: 0; }
+:root body .drops { background: rgba(10, 8, 7, 0.85); border-block: var(--px) solid var(--ink); }
+:root body .sb { background: #000; }
+:root body .sb-w { background: #050505; border: var(--px) solid #1a1a1a; }
+
+/* Pro lock */
+:root body .pro-blur { filter: blur(4px) saturate(0.6); }
+:root body .pro-qr { border: var(--px) dashed #5a554f; background: rgba(0, 0, 0, 0.45); }
+
+/* Kit buttons keep their own label colour (the plain link colour would win otherwise). */
+:root body .mc-btn { color: var(--label); }
+:root body .mc-btn:hover { color: #fff8d8; }
+@media (max-width: 560px) { :root body .mc-wordmark { margin-bottom: 36px; } }
+

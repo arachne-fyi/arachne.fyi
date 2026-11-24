@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>Calculators: Arachne.fyi</title>
+<meta name="description" content="Arachne profit calculators: crystal or callings, what a session makes, and a crystal shopping list, at live Bazaar prices.">
+</head>
+<body>
+<site-header page="tools"></site-header>
+<main id="main" class="page">
+  <div class="page-head">
+    <h1 class="px">Calculators</h1>
+    <p class="lede" id="tools-basis">Loading prices…</p>
+  </div>
+
+  <section class="sec" aria-labelledby="compare-h">
+    <h2 id="compare-h" class="px sec-title">Crystal or callings?</h2>
+    <div id="compare" class="compare"><p class="empty">Loading…</p></div>
+    <p class="sec-note">Loot here does not include Scavenger coins or your Magic Find; your real numbers are on the dashboard.</p>
+  </section>
+
+  <div class="tools-grid">
+    <section class="panel card" aria-labelledby="calc-h">
+      <h2 id="calc-h" class="px card-title">What will I make?</h2>
+      <form id="calc" class="form-row">
+        <div class="field"><label for="calc-kills" class="px field-label">Kills</label><input id="calc-kills" class="input" name="kills" inputmode="numeric" value="50" autocomplete="off"></div>
+        <div class="field">
+          <label for="calc-tier" class="px field-label">Summon</label>
+          <div class="select"><select id="calc-tier" class="px" name="tier"><option value="CRYSTAL">Crystal (Lv500)</option><option value="CALLING">Callings (Lv300)</option></select></div>
+        </div>
+      </form>
+      <div id="calc-out" class="result" aria-live="polite"></div>
+    </section>
+
+    <section class="panel card" aria-labelledby="mats-h">
+      <h2 id="mats-h" class="px card-title">Crystal shopping list</h2>
+      <form id="mats" class="form-row one">
+        <div class="field"><label for="mats-n" class="px field-label">Crystals</label><input id="mats-n" class="input" name="n" inputmode="numeric" value="10" autocomplete="off"></div>
+      </form>
+      <div id="mats-out" class="rows" aria-live="polite"></div>
+    </section>
+  </div>
+
+  <section class="panel card" aria-labelledby="local-h">
+    <h2 id="local-h" class="px card-title">Your own numbers</h2>
+    <p class="soft">The mod keeps your totals in <code>.minecraft/config/arachnefyi/local.json</code>, even without the dashboard. Open it here to see them. The file stays on your computer; nothing is uploaded.</p>
+    <div class="file-pick">
+      <input type="file" id="local-file" accept=".json,application/json">
+      <label for="local-file" class="btn btn-ghost">Open local.json</label>
+      <span id="local-name" class="file-name">No file chosen</span>
+    </div>
+    <div id="local-out" class="rows"></div>
+  </section>
+
+  <section class="sec" aria-labelledby="ticker-h">
+    <h2 id="ticker-h" class="px sec-title">Bazaar prices</h2>
+    <div class="panel card"><div id="ticker" class="ticker"><p class="empty">Loading…</p></div></div>
+  </section>
+</main>
+<site-footer></site-footer>
+<script type="module" src="/src/tools.ts"></script>
+</body>
+</html>

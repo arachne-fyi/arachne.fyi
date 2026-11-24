@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>Help: Arachne.fyi</title>
+<meta name="description" content="How Arachne.fyi works, how to install it, and exactly what it sends.">
+</head>
+<body>
+<site-header page="help"></site-header>
+<main id="main" class="page">
+  <div class="page-head">
+    <h1 class="px">Help</h1>
+    <p class="lede">How to install the mod, how tracking works, and exactly what it sends.</p>
+    <nav class="chips" aria-label="On this page">
+      <a href="#install" class="px chip">Install</a>
+      <a href="#how" class="px chip">How it works</a>
+      <a href="#faq" class="px chip">Questions</a>
+      <a href="#sends" class="px chip">What the mod sends</a>
+    </nav>
+  </div>
+
+  <section id="install" class="sec" aria-labelledby="install-h">
+    <h2 id="install-h" class="px sec-title">Install</h2>
+    <div class="reqs" aria-label="You need">
+      <span class="px req">Fabric Loader 0.19.5+</span>
+      <span class="px req">Fabric API</span>
+      <span class="px req">Java 25</span>
+    </div>
+    <p class="sec-note">The launchers below handle Java for you. Get the jar for your Minecraft version from the <a href="/download">download page</a>.</p>
+    <div class="launchers">
+      <div class="panel card">
+        <h3 class="px card-title">Prism Launcher</h3>
+        <ol>
+          <li>Create an instance for your Minecraft version and pick Fabric as the loader.</li>
+          <li>Edit the instance, open Mods, choose Download mods and add Fabric API.</li>
+          <li>Drag the Arachne.fyi jar into the same Mods list.</li>
+        </ol>
+      </div>
+      <div class="panel card">
+        <h3 class="px card-title">Modrinth App</h3>
+        <ol>
+          <li>Create a Fabric profile for your Minecraft version and add Fabric API from the Discover tab.</li>
+          <li>Open the profile, choose Add content, then Add from file, and pick the Arachne.fyi jar.</li>
+        </ol>
+      </div>
+      <div class="panel card">
+        <h3 class="px card-title">Official launcher</h3>
+        <ol>
+          <li>Run the installer from <a href="https://fabricmc.net/use/installer/" rel="noopener">fabricmc.net</a> for your Minecraft version.</li>
+          <li>Put Fabric API and the Arachne.fyi jar in your <code>.minecraft/mods</code> folder.</li>
+          <li>Pick the Fabric profile in the launcher and play.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" class="sec" aria-labelledby="how-h">
+    <h2 id="how-h" class="px sec-title">How it works</h2>
+    <ol class="help-steps">
+      <li class="panel step"><span class="px step-n" aria-hidden="true">1</span><h3 class="px card-title">Install the mod</h3><p class="soft">It reads your chat and the loot that appears after a fight, in Arachne's Sanctuary only.</p></li>
+      <li class="panel step"><span class="px step-n" aria-hidden="true">2</span><h3 class="px card-title">Farm as normal</h3><p class="soft">The mod counts crystals, kills, drops and time spent, and shows them on screen.</p></li>
+      <li class="panel step"><span class="px step-n" aria-hidden="true">3</span><h3 class="px card-title">See it on the dashboard</h3><p class="soft">If you've been invited, pair the mod and your numbers appear on the website, valued at Bazaar prices.</p></li>
+    </ol>
+  </section>
+
+  <section id="faq" class="sec" aria-labelledby="faq-h">
+    <h2 id="faq-h" class="px sec-title">Questions</h2>
+    <div class="qa">
+      <details class="panel">
+        <summary class="px">Can I get notifications on my phone?<span class="plus" aria-hidden="true">+</span></summary>
+        <p class="soft">Yes, if you're invited. Open the dashboard on your phone, use "Add to Home Screen", then turn notifications on in Settings.</p>
+      </details>
+      <details class="panel">
+        <summary class="px">Can I use the mod without an invite?<span class="plus" aria-hidden="true">+</span></summary>
+        <p class="soft">Yes. Without pairing, the mod tracks your own drops and shows them in game. Nothing is sent anywhere. The website dashboard is the only part that needs an invite.</p>
+      </details>
+      <details class="panel">
+        <summary class="px">Why is the dashboard invite only?<span class="plus" aria-hidden="true">+</span></summary>
+        <p class="soft">It runs on one person's PC for a group of friends. Logging in with Discord asks the admin to let you in.</p>
+      </details>
+      <details class="panel">
+        <summary class="px">How do groups work?<span class="plus" aria-hidden="true">+</span></summary>
+        <p class="soft">A group has up to 5 members. Its owner picks how people join: invite only, public, or open to anyone who meets the requirements. Everyone in the group sees the group's totals.</p>
+      </details>
+      <details class="panel">
+        <summary class="px">Will this get me banned?<span class="plus" aria-hidden="true">+</span></summary>
+        <p class="soft">The mod doesn't play for you, click for you, or change how your game talks to Hypixel. It only reads what's already on your screen. Hypixel's rule is that any mod not on their <a href="https://support.hypixel.net/hc/en-us/articles/6472550754962" rel="noopener">Allowed Modifications</a> list is used at your own risk, and this one isn't on it. So: low risk, not zero.</p>
+      </details>
+      <details class="panel">
+        <summary class="px">What counts as a kill?<span class="plus" aria-hidden="true">+</span></summary>
+        <p class="soft">You did at least 10,000 damage to the boss, shown in the "Your Damage" line within 5 seconds of it dying.</p>
+      </details>
+      <details class="panel">
+        <summary class="px">When does "today" start?<span class="plus" aria-hidden="true">+</span></summary>
+        <p class="soft">Midnight UTC. In the UK that is midnight in winter and 1am in summer.</p>
+      </details>
+      <details class="panel">
+        <summary class="px">Where do the prices come from?<span class="plus" aria-hidden="true">+</span></summary>
+        <p class="soft">The Hypixel Bazaar, checked every 5 minutes. Each drop is valued at the price when it dropped, not today's price. Items not on the Bazaar use their NPC sell price.</p>
+      </details>
+      <details class="panel">
+        <summary class="px">Why are there two "per hour" numbers?<span class="plus" aria-hidden="true">+</span></summary>
+        <p class="soft">One is per real hour, the other per hour of one account farming. With two accounts at once, the second is about half the first.</p>
+      </details>
+    </div>
+  </section>
+
+  <section id="sends" class="sec" aria-labelledby="sends-h">
+    <h2 id="sends-h" class="px sec-title">What the mod sends</h2>
+    <div class="panel card prose">
+      <p>Only once you pair it with a dashboard token. Before that, nothing leaves your PC.</p>
+      <ul>
+        <li>Your Minecraft name and UUID, so your accounts can be told apart.</li>
+        <li>When an Arachne spawned and died, and your damage line for that fight.</li>
+        <li>Which summon item you placed (a crystal or a calling).</li>
+        <li>The item ID and count of each drop you got, and Scavenger coins.</li>
+        <li>The mod version, your Minecraft version, and whether you're in the Sanctuary or in a fight.</li>
+      </ul>
+      <p>It does not send your chat, other players' names, your inventory, or anything from outside the Sanctuary.</p>
+      <p>On the dashboard you can download everything stored about you from Settings. Ask the admin to delete it. The <a href="/privacy">privacy notice</a> has the details.</p>
+    </div>
+  </section>
+
+  <div class="panel cta-line">
+    <span><span class="px">Still stuck?</span> <span class="soft">Email us and we'll help.</span></span>
+    <a class="btn btn-ghost" href="mailto:contact@arachne.fyi?subject=Help">contact@arachne.fyi</a>
+  </div>
+</main>
+<site-footer></site-footer>
+<script type="module" src="/src/site.ts"></script>
+</body>
+</html>

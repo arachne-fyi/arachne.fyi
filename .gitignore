@@ -1,0 +1,24 @@
+node_modules/
+dist/
+data/
+data-snapshot/
+.env
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# local only
+redesign/backup/
+Claude outputs/
+*.patch
+.env.*
+!.env.example
+*.db
+*.db-shm
+*.db-wal
+*.tsbuildinfo
+coverage/
+*.iml
+desktop.ini
