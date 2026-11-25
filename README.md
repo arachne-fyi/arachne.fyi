@@ -67,3 +67,4 @@ See [`mod/README.md`](mod/README.md). Short version: `cd mod && ./gradlew build`
 3. [`server/src/ingest.ts`](server/src/ingest.ts): what happens to a batch.
 4. [`mod/src/main/java/fyi/arachne/mod/tracking/Tracker.java`](mod/src/main/java/fyi/arachne/mod/tracking/Tracker.java):
    how chat lines become events.
+
