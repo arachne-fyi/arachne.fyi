@@ -5,7 +5,7 @@ import fastifyCookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { ITEMS, NPC_PRICES, SCHEMA_VERSION, SUMMON_ITEMS, WINDOWS, itemName, type Window } from '@arachne/shared';
+import { ITEMS, LiveRequest, MAX_FUTURE_MS, NPC_PRICES, SCHEMA_VERSION, SUMMON_ITEMS, WINDOWS, itemName, type Window } from '@arachne/shared';
 import { SESSION_COOKIE, safeEqual, type User } from './auth.ts';
 import type { Context } from './context.ts';
 import { IngestError } from './ingest.ts';
@@ -53,6 +53,8 @@ export async function buildApp(ctx: Context): Promise<FastifyInstance> {
   grandfather(ctx);
 
   const batchLimit = limiter(120, 60_000);
+  // Two small packets per boss per account (spawn, death); a few accounts on one login.
+  const liveLimit = limiter(240, 60_000);
   const authLimit = limiter(30, 60_000);
 
   // ---- helpers -----------------------------------------------------------------------
@@ -160,6 +162,50 @@ export async function buildApp(ctx: Context): Promise<FastifyInstance> {
       if (err instanceof IngestError) return reply.code(err.status).send({ error: err.code, message: err.message });
       throw err;
     }
+  });
+
+  /**
+   * The mod's instant packet when a boss spawns or dies (see LiveRequest in shared/events.ts and
+   * live.ts). Nothing is stored: it only moves the website's fight timer. The same events still
+   * arrive in the next batch.
+   */
+  app.post('/api/v1/live', async (req, reply) => {
+    const now = Date.now();
+    const user = auth.tokenUser(req.headers.authorization, now);
+    if (!user) return reply.code(401).send({ error: 'invalid_token' });
+    if (!liveLimit(String(user.id), now)) return reply.code(429).send({ error: 'slow_down' });
+    const parsed = LiveRequest.safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: 'bad_request', message: parsed.error.issues[0]?.message ?? 'Invalid packet' });
+    const r = parsed.data;
+    const owner = ctx.db.get<{ user_id: number | null }>('SELECT user_id FROM state.accounts WHERE uuid = ?', r.account.uuid);
+    if (owner && owner.user_id != null && owner.user_id !== user.id) return reply.code(403).send({ error: 'account_owned_by_other_user' });
+    // Same clock-skew rule as batches (ingest.ts): small differences are left alone.
+    const rawSkew = now - r.sentAt;
+    const skew = Math.abs(rawSkew) > 5_000 ? rawSkew : 0;
+    if (r.ts + skew > now + MAX_FUTURE_MS) return reply.code(400).send({ error: 'bad_request', message: 'ts: too far in the future' });
+    // Without a lobby key, reports from the same group are matched on time alone.
+    const group = ctx.db.get<{ group_id: number }>('SELECT group_id FROM state.group_members WHERE user_id = ? ORDER BY joined_at LIMIT 1', user.id);
+    const boss = ctx.live.report(r, skew, group ? `group:${group.group_id}` : `user:${user.id}`, now);
+    // Only "something changed": each dashboard asks /api/live for what it may see.
+    ctx.hub.publish('boss', { at: now });
+    return { ok: true, boss };
+  });
+
+  /** Bosses being fought right now that you or your group mates reported (live.ts). */
+  app.get('/api/live', async (req, reply) => {
+    const user = requireUser(req, reply);
+    if (!user) return;
+    const now = Date.now();
+    const hidden = privateUsers(ctx);
+    const people = new Set<number>([user.id]);
+    for (const r of ctx.db.all<{ user_id: number }>(
+      'SELECT m2.user_id FROM state.group_members m1 JOIN state.group_members m2 ON m2.group_id = m1.group_id WHERE m1.user_id = ?',
+      user.id,
+    )) {
+      if (!hidden.has(r.user_id)) people.add(r.user_id);
+    }
+    const accounts = new Set([...people].flatMap((id) => stats.accountIds(id)));
+    return { serverTime: now, bosses: ctx.live.visible(accounts, now) };
   });
 
   /** Lets the mod check a freshly pasted token without sending events. */

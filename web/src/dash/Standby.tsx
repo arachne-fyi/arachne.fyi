@@ -10,7 +10,7 @@ import { ago, coins, duration, int, shortClock } from '../format.ts';
 import { useLive, useNow } from '../hooks.ts';
 import { platform, type Group } from '../platform-api.ts';
 import { savedSpawnPref, secs, ttkOf } from './MoreGraphs.tsx';
-import { ESSENCE, SOUL, killsOf, lootOf, meId, openFights, startOfUtcDay, sumSeries, tierWord, timer, type User } from './data.ts';
+import { ESSENCE, SOUL, killsOf, liveFights, lootOf, meId, startOfUtcDay, sumSeries, tierWord, timer, useLiveBosses, type User } from './data.ts';
 
 type Kind =
   | 'profit'
@@ -141,6 +141,7 @@ export function Standby({ user, group, exit }: { user: User; group: Group | null
   const day = useLive(() => (needs('graph', 'hourly', 'killsHourly') ? api.series('24h') : Promise.resolve(null)), [needs('graph', 'hourly', 'killsHourly')], 60_000);
   const week = useLive(() => (needs('days') ? api.series('7d') : Promise.resolve(null)), [needs('days')], 120_000);
   const month = useLive(() => (needs('month') ? api.series('30d') : Promise.resolve(null)), [needs('month')], 300_000);
+  const bosses = useLiveBosses();
   const ttk = useLive(() => (needs('ttk', 'ttkSpawn', 'ttkHourly') ? api.ttk('me', 1) : Promise.resolve(null)), [needs('ttk', 'ttkSpawn', 'ttkHourly')], 30_000);
 
   const mine = new Set((ov.data?.accounts ?? []).filter((a) => a.userId === me).map((a) => a.uuid));
@@ -241,8 +242,11 @@ export function Standby({ user, group, exit }: { user: User; group: Group | null
         return { value: loot.data ? int(s.count) : '…', sub: t.today.kills ? `about ${int(s.count / t.today.kills)} a kill` : undefined };
       }
       case 'fight': {
-        const open = openFights(events, now)[0];
-        if (open) return { value: timer(now - open.startedAt), sub: open.accountName, hot: true };
+        const open = liveFights(events, bosses.data, now, mine)[0];
+        if (open) {
+          const agreed = open.confirmations && open.confirmations > 1 ? ` · ${open.confirmations} accounts agree` : '';
+          return { value: timer(Math.max(0, now - open.startedAt)), sub: `${open.accountName}${agreed}`, hot: true };
+        }
         const last = events.find((e) => e.kind === 'DEATH');
         return { value: '-', sub: last ? `last kill ${ago(last.ts, now)}` : 'no fight' };
       }

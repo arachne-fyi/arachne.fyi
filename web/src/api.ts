@@ -310,6 +310,20 @@ export async function request<T>(method: string, path: string, body?: unknown): 
   return data as T;
 }
 
+/** /api/live: bosses being fought right now, agreed from every account that reported them. */
+export interface LiveBoss {
+  id: string;
+  tier: string;
+  /** Agreed spawn and death times (median of the accounts' reports), server clock, epoch ms. */
+  spawnTs: number | null;
+  deathTs: number | null;
+  /** Accounts that reported the spawn: more than one means the time was cross-checked. */
+  confirmations: number;
+  /** Largest difference between one account's spawn time and the agreed one, ms. */
+  spreadMs: number;
+  accounts: { uuid: string; name: string }[];
+}
+
 /** /api/ttk: how long killed bosses lived (fight), and their spawn-in (crystal placed to spawn). */
 export interface Ttk {
   days: number;
@@ -345,6 +359,7 @@ export const api = {
   calendar: (scope: 'group' | 'me') => request<{ days: { day: number; profit: number; kills: number }[] }>('GET', `/api/calendar?scope=${scope}`),
   whatIf: (scope: 'group' | 'me', days: number) =>
     request<{ actual: number; INSTANT_SELL: number; SELL_OFFER: number; NPC: number }>('GET', `/api/whatif?scope=${scope}&days=${days}`),
+  live: () => request<{ serverTime: number; bosses: LiveBoss[] }>('GET', '/api/live'),
   /** Time to kill: your accounts, or a group's members (`group` id). days: 1, 7 or 30. */
   ttk: (who: { group: number } | 'me', days: 1 | 7 | 30) =>
     request<Ttk>('GET', `/api/ttk?days=${days}${who === 'me' ? '' : `&group=${who.group}`}`),

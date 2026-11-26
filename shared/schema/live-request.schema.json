@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "number",
+      "const": 1
+    },
+    "account": {
+      "type": "object",
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}$"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_]{1,16}$"
+        }
+      },
+      "required": [
+        "uuid",
+        "name"
+      ]
+    },
+    "mod": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "minecraft": {
+          "type": "string",
+          "maxLength": 32
+        }
+      },
+      "required": [
+        "version",
+        "minecraft"
+      ]
+    },
+    "sentAt": {
+      "type": "integer",
+      "minimum": 1500000000000,
+      "maximum": 9999999999999
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "SPAWN",
+        "DEATH"
+      ]
+    },
+    "ts": {
+      "type": "integer",
+      "minimum": 1500000000000,
+      "maximum": 9999999999999
+    },
+    "fight": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{4,64}$"
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "CRYSTAL",
+        "CALLING",
+        "UNKNOWN"
+      ]
+    },
+    "key": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$"
+    }
+  },
+  "required": [
+    "schema",
+    "account",
+    "mod",
+    "sentAt",
+    "kind",
+    "ts",
+    "fight"
+  ]
+}

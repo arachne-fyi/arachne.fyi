@@ -41,11 +41,11 @@ export function registerSecurity(app: FastifyInstance, ctx: Context): void {
   });
 
   // A request budget per address: generous for a dashboard, tight enough to slow scraping and
-  // guessing. The mod's batch route has its own, separate limit.
+  // guessing. The mod's batch and live routes have their own, separate limits.
   const buckets = new Map<string, { n: number; reset: number }>();
   app.addHook('onRequest', async (req, reply) => {
     const url = req.url;
-    if (url === '/healthz' || url.startsWith('/api/v1/batch') || !(url.startsWith('/api/') || url.startsWith('/auth/'))) return;
+    if (url === '/healthz' || url.startsWith('/api/v1/batch') || url.startsWith('/api/v1/live') || !(url.startsWith('/api/') || url.startsWith('/auth/'))) return;
     const write = req.method !== 'GET' && req.method !== 'HEAD';
     // Per login when there is one, so friends behind the same router don't share a budget;
     // per address otherwise. An open dashboard page makes about 30 reads a minute.

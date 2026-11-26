@@ -5,7 +5,7 @@ import { ago, coins, int, shortClock } from '../format.ts';
 import { useLive, useNow } from '../hooks.ts';
 import { useIsPro } from '../components/Locked.tsx';
 import { platform, type Group } from '../platform-api.ts';
-import { ESSENCE, EMPTY, SOUL, WINDOWS, WIN_WORDS, accountState, accountsOf, groupLoot, killsOf, lootOf, meId, openFights, sumSeries, tierWord, timer, type User, type Win } from './data.ts';
+import { ESSENCE, EMPTY, SOUL, WINDOWS, WIN_WORDS, accountState, accountsOf, groupLoot, killsOf, lootOf, liveFights, meId, sumSeries, tierWord, timer, useLiveBosses, type User, type Win } from './data.ts';
 import { Avatar, Card, CopyButton, Loading, Seg, colourAt } from './ui.tsx';
 import { linkTo, type Go } from './App.tsx';
 import { itemIcon } from '../item-icons.ts';
@@ -20,6 +20,7 @@ export function Home({ group, user, go }: { group: Group; user: User; go: Go }) 
   const fights = useLive(() => api.fights(120), [], 30_000);
   const series = useLive(() => api.series('24h'), [], 60_000);
   const loot = useLive(() => groupLoot(win, group.id), [win, group.id]);
+  const bosses = useLiveBosses();
 
   if (!g.data) return <main className="dpage"><Loading error={g.error} /></main>;
   const members = g.data.members;
@@ -27,7 +28,7 @@ export function Home({ group, user, go }: { group: Group; user: User; go: Go }) 
   const accounts = accountsOf(ov.data?.accounts, visible);
   const uuids = new Set(accounts.map((a) => a.uuid));
   const events = (ev.data?.events ?? []).filter((e) => uuids.has(e.account));
-  const live = openFights(events, now);
+  const live = liveFights(events, bosses.data, now, uuids);
   const liveBy = new Map(live.map((f) => [f.account, f]));
   const t = g.data.totals[win] ?? EMPTY;
   const farming = accounts.map((a) => ({ a, s: accountState(a, liveBy.get(a.uuid)) })).filter((x) => x.s.on);
@@ -125,7 +126,11 @@ export function Home({ group, user, go }: { group: Group; user: User; go: Go }) 
                     <span className="dot dot-on" />
                     <span className="px grow">{a.name}</span>
                     <span className="muted small">{s.words}</span>
-                    {f && <span className="px hot">{timer(now - f.startedAt)}</span>}
+                    {f && (
+                      <span className="px hot" title={f.confirmations ? `Spawn time agreed by ${f.confirmations} account${f.confirmations === 1 ? '' : 's'}` : undefined}>
+                        {timer(Math.max(0, now - f.startedAt))}
+                      </span>
+                    )}
                   </div>
                 );
               })

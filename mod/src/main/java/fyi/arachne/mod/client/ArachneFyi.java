@@ -2,6 +2,7 @@ package fyi.arachne.mod.client;
 
 import com.google.gson.JsonObject;
 
+import fyi.arachne.mod.skyblock.Lobby;
 import fyi.arachne.mod.sync.EventQueue;
 import fyi.arachne.mod.sync.LocalPrices;
 import fyi.arachne.mod.sync.Settings;
@@ -53,6 +54,8 @@ public final class ArachneFyi implements ClientModInitializer {
     /** The Minecraft account in use. Events are tagged with it when recorded. */
     private static String account;
     private static String accountName;
+    /** Hypixel server id from the sidebar, for matching a boss across accounts. Null if unknown. */
+    private static String lobby;
     private static Object lastLevel;
     private static boolean updateChecked;
     private static int ticks;
@@ -132,7 +135,11 @@ public final class ArachneFyi implements ClientModInitializer {
         if (origin != null && origin.alpha()) return;
         if (origin != null) event.add("origin", origin.toJson());
         local.record(event);
-        if (settings.paired()) sync.record(account, accountName, event);
+        if (settings.paired()) {
+            sync.record(account, accountName, event);
+            // Spawns and deaths also go out at once, so the website's fight timer is exact.
+            sync.live(account, accountName, event, lobby);
+        }
     }
 
     /** For the HUD: true while connected to the Alpha network. */
@@ -149,6 +156,7 @@ public final class ArachneFyi implements ClientModInitializer {
         if (client.level != lastLevel) {
             tracker.resetContext(now, Event.Interrupt.OTHER);
             lastLevel = client.level;
+            lobby = null; // new level, maybe a new server: read it again
             ticks = 0;
         }
         String uuid = client.player.getUUID().toString();
@@ -169,6 +177,7 @@ public final class ArachneFyi implements ClientModInitializer {
                     snapshot.detectionReason(),
                     now);
             tracker.observePurse(snapshot.sidebarLines(), menu, now);
+            lobby = Lobby.find(snapshot.sidebarLines());
             // Heartbeats only while in SkyBlock, so the dashboard's "online" means something.
             sync.setAccount(tracker.skyBlock() ? account : null, accountName, tracker.inArea(), tracker.fighting());
             // Once per game start, the first time in SkyBlock: is there a newer build?

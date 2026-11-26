@@ -4,6 +4,7 @@ import type { Config } from './config.ts';
 import { Db } from './db.ts';
 import { Indexer } from './indexer.ts';
 import { Ingest } from './ingest.ts';
+import { LiveBosses } from './live.ts';
 import { Insights, Views } from './insights.ts';
 import { Prices } from './prices.ts';
 import { Progress } from './progress.ts';
@@ -28,6 +29,8 @@ export interface Context {
   push: Push;
   auth: Auth;
   ingest: Ingest;
+  /** Bosses being fought right now, from the mod's instant spawn/death packets (live.ts). */
+  live: LiveBosses;
   hub: Hub;
 }
 
@@ -73,6 +76,7 @@ export function createContext(config: Config): Context {
     progress: new Progress(db, stats, insights),
     auth,
     ingest,
+    live: new LiveBosses(),
     hub: new Hub(),
   } as Context;
   ctx.push = new Push(ctx);
