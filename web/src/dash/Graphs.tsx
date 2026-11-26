@@ -2,7 +2,7 @@
    your farming days and best hours, Bazaar prices, and your drops against the wiki. */
 import { useState, type PointerEvent } from 'react';
 import { api, type DropRates } from '../api.ts';
-import { coins, dateTime, dayLabel } from '../format.ts';
+import { coins, dateTime, dayLabel, shortClock } from '../format.ts';
 import { useLive, useNow } from '../hooks.ts';
 import { useIsPro } from '../components/Locked.tsx';
 import { platform, type Group } from '../platform-api.ts';
@@ -156,6 +156,11 @@ function MemberLines({ data, title }: { data: Lines; title: string }) {
   };
   const days = Array.from({ length: 7 }, (_, i) => data.from + ((i + 0.5) * (n * data.bucketMs)) / 7);
   const sorted = hover == null ? [] : [...data.lines].sort((a, b) => (b.values[hover] ?? 0) - (a.values[hover] ?? 0));
+  const gained = (l: Lines['lines'][number], i: number) => (l.values[i] ?? 0) - (i > 0 ? (l.values[i - 1] ?? 0) : 0);
+  const groupTotal = hover == null ? 0 : data.lines.reduce((n, l) => n + (l.values[hover] ?? 0), 0);
+  const groupGain = hover == null ? 0 : data.lines.reduce((n, l) => n + gained(l, hover), 0);
+  const step = Math.round(data.bucketMs / 60_000);
+  const stepWord = step % 60 === 0 ? `${step / 60 === 1 ? 'hour' : `${step / 60}h`}` : `${step}m`;
   return (
     <Card
       title={<span className="dh2">{title}</span>}
@@ -179,16 +184,33 @@ function MemberLines({ data, title }: { data: Lines; title: string }) {
           {hover != null && <path d={`M${x(hover)} 0V300`} stroke="rgba(255,255,255,0.25)" strokeDasharray="4 4" fill="none" vectorEffect="non-scaling-stroke" />}
         </svg>
         {hover != null && (
-          <div className="tip" style={{ left: `min(${(hover / Math.max(1, n - 1)) * 100}%, calc(100% - 200px))` }}>
+          <div className="tip" style={{ left: `clamp(0px, calc(${(hover / Math.max(1, n - 1)) * 100}% + 12px), calc(100% - 260px))` }}>
             <span className="px">{dateTime(data.from + (hover + 1) * data.bucketMs)}</span>
-            {sorted.map((l) => (
-              <span key={l.name}>
-                <span className="px" style={{ color: l.colour }}>
-                  {l.name}
-                </span>{' '}
-                {coins(l.values[hover] ?? 0)}
+            {sorted.map((l, rank) => {
+              const g = gained(l, hover);
+              return (
+                <span key={l.name} className="tip-row">
+                  <span>
+                    <span className="muted">{rank + 1}.</span>{' '}
+                    <span className="px" style={{ color: l.colour }}>
+                      {l.name}
+                    </span>
+                  </span>
+                  <span>
+                    {coins(l.values[hover] ?? 0)} <span className={g > 0 ? 'gain' : 'muted'}>{g > 0 ? `+${coins(g)}` : '±0'}</span>
+                  </span>
+                </span>
+              );
+            })}
+            {data.lines.length > 1 && (
+              <span className="tip-row muted" style={{ borderTop: '1px solid var(--line)', paddingTop: 4, marginTop: 2 }}>
+                <span>Group</span>
+                <span>
+                  {coins(groupTotal)} {groupGain > 0 ? `+${coins(groupGain)}` : '±0'}
+                </span>
               </span>
-            ))}
+            )}
+            <span className="muted tiny">+ is the gain in that {stepWord}</span>
           </div>
         )}
       </div>
@@ -202,6 +224,7 @@ function MemberLines({ data, title }: { data: Lines; title: string }) {
 }
 
 function ProjectionCard({ p }: { p: Projection }) {
+  const [hover, setHover] = useState<number | null>(null);
   const max = Math.max(1, p.projected, ...p.soFar);
   const w = 400 * p.dayGone;
   const pts = p.soFar.map((v, i) => `${(i / Math.max(1, p.soFar.length - 1)) * w},${115 - (Math.max(0, v) / max) * 110}`);
@@ -214,10 +237,45 @@ function ProjectionCard({ p }: { p: Projection }) {
         {coins(p.projected)}
       </span>
       <span className="soft small">At today's pace so far, the group ends the day (00:00 UTC) on about this. It is a straight line from the profit so far; it doesn't know when people log off.</span>
-      <svg viewBox="0 0 400 120" width="100%" height="120" preserveAspectRatio="none" aria-hidden="true">
-        <polyline points={pts.join(' ')} stroke="var(--orange)" strokeWidth="3" fill="none" vectorEffect="non-scaling-stroke" />
-        <path d={`M${w} ${lastY} L400 ${endY}`} stroke="var(--orange)" strokeWidth="2" strokeDasharray="6 6" fill="none" vectorEffect="non-scaling-stroke" />
-      </svg>
+      <div className="chart">
+        <svg
+          viewBox="0 0 400 120"
+          width="100%"
+          height="120"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          onPointerMove={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            setHover(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)));
+          }}
+          onPointerLeave={() => setHover(null)}
+        >
+          <polyline points={pts.join(' ')} stroke="var(--orange)" strokeWidth="3" fill="none" vectorEffect="non-scaling-stroke" />
+          <path d={`M${w} ${lastY} L400 ${endY}`} stroke="var(--orange)" strokeWidth="2" strokeDasharray="6 6" fill="none" vectorEffect="non-scaling-stroke" />
+          {hover != null && <path d={`M${hover * 400} 0V120`} stroke="rgba(255,255,255,0.25)" strokeDasharray="4 4" fill="none" vectorEffect="non-scaling-stroke" />}
+        </svg>
+        {hover != null &&
+          (() => {
+            const dayStart = p.now - p.dayGone * 86_400_000;
+            const at = dayStart + hover * 86_400_000;
+            const past = hover <= p.dayGone;
+            const i = Math.round((hover / Math.max(0.0001, p.dayGone)) * (p.soFar.length - 1));
+            const v = past ? (p.soFar[Math.min(p.soFar.length - 1, i)] ?? 0) : last + (Math.max(p.projected, last) - last) * ((hover - p.dayGone) / Math.max(0.0001, 1 - p.dayGone));
+            return (
+              <div className="tip" style={{ top: -8, transform: 'translateY(-100%)', left: `clamp(0px, calc(${hover * 100}% - 90px), calc(100% - 190px))` }}>
+                <span className="px">{hover >= 0.999 ? 'End of day' : shortClock(at)}</span>
+                <span>
+                  <b>{coins(v)}</b> {past ? 'so far' : 'projected'}
+                </span>
+                {past ? (
+                  hover * 24 >= 0.5 && <span className="muted">{coins(v / (hover * 24))} an hour on average</span>
+                ) : (
+                  <span className="muted">{coins(Math.max(0, v - last))} more than now</span>
+                )}
+              </div>
+            );
+          })()}
+      </div>
     </Card>
   );
 }

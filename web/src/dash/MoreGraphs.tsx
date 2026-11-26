@@ -3,10 +3,10 @@
    that the free plan's locked preview fills with example numbers. Styles: dash.css "graphs+". */
 import { useState, type ReactNode } from 'react';
 import { api, type Ttk } from '../api.ts';
-import { coins, dayLabel, shortClock } from '../format.ts';
+import { coins, dateTime, dayLabel, duration, fullCoins, shortClock } from '../format.ts';
 import { useLive } from '../hooks.ts';
 import type { Group } from '../platform-api.ts';
-import { Card, Loading, Seg, Toggle } from './ui.tsx';
+import { Card, FloatTip, Loading, Seg, Toggle, useHoverTip } from './ui.tsx';
 
 // ---- shared ----------------------------------------------------------------------------
 
@@ -128,7 +128,8 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 
 function TtkTrend({ data, spawn }: { data: Ttk; spawn: boolean }) {
   const [hover, setHover] = useState<number | null>(null);
-  const pts = data.buckets.map((b) => ({ t: b.start, v: ttkOf(b.avgFightMs, b.avgSpawnMs, data.avgSpawnMs, spawn), kills: b.kills }));
+  const pts = data.buckets.map((b) => ({ t: b.start, v: ttkOf(b.avgFightMs, b.avgSpawnMs, data.avgSpawnMs, spawn), fight: b.avgFightMs, spawnIn: b.avgSpawnMs ?? data.avgSpawnMs, kills: b.kills }));
+  const overall = data.avgFightMs != null ? ttkOf(data.avgFightMs, data.avgSpawnMs, null, spawn) : null;
   if (pts.length === 0) return <p className="empty small">Nothing yet.</p>;
   const lo = Math.min(...pts.map((p) => p.v));
   const hi = Math.max(...pts.map((p) => p.v));
@@ -165,6 +166,16 @@ function TtkTrend({ data, spawn }: { data: Ttk; spawn: boolean }) {
           <span>
             <b>{secs(h.v)}</b> average
           </span>
+          {spawn && h.spawnIn != null && (
+            <span className="muted">
+              {secs(h.fight)} fight + {secs(h.spawnIn)} spawn-in
+            </span>
+          )}
+          {overall != null && overall > 0 && (
+            <span className={Math.abs(h.v - overall) < 100 ? 'muted' : h.v < overall ? 'gain' : 'loss'}>
+              {Math.abs(h.v - overall) < 100 ? 'right on your average' : `${(h.v - overall) / 1000 > 0 ? '+' : '−'}${Math.abs((h.v - overall) / 1000).toFixed(1)}s vs ${data.days === 1 ? 'the day' : 'the range'}`}
+            </span>
+          )}
           <span className="muted">{h.kills.toLocaleString('en-GB')} kills</span>
         </div>
       )}
@@ -190,13 +201,29 @@ function TtkHistogram({ data, spawn, avg }: { data: Ttk; spawn: boolean; avg: nu
   const avgBin = avg != null ? Math.min(hist.length - 1, Math.floor(avg / data.binMs)) : -1;
   const step = data.binMs / 1000;
   const edge = (i: number) => (i === hist.length - 1 ? `${i * step}s+` : `${i * step}s`);
+  const all = hist.reduce((a, n) => a + n, 0);
+  const { tip, on, hide } = useHoverTip<number>();
+  const faster = (i: number) => hist.slice(0, i).reduce((a, n) => a + n, 0);
   return (
     <div className="stack" style={{ gap: 6 }}>
-      <div className="hist" role="img" aria-label={`Kills by time taken, ${edge(first)} to ${edge(last)}`}>
-        {bins.map((n, k) => {
-          const i = first + k;
-          return <span key={i} className={i === avgBin ? 'on' : undefined} style={{ height: `${Math.max(n > 0 ? 3 : 0, (n / top) * 100)}%` }} title={`${edge(i)}–${(i + 1) * step}s: ${n.toLocaleString('en-GB')} kills`} />;
-        })}
+      <div className="tip-host" onPointerLeave={hide}>
+        <div className="hist" role="img" aria-label={`Kills by time taken, ${edge(first)} to ${edge(last)}`}>
+          {bins.map((n, k) => {
+            const i = first + k;
+            return <span key={i} className={i === avgBin ? 'on' : undefined} style={{ height: `${Math.max(n > 0 ? 3 : 0, (n / top) * 100)}%` }} {...on(i)} />;
+          })}
+        </div>
+        {tip && (
+          <FloatTip at={tip}>
+            <span className="px">{tip.v === hist.length - 1 ? `${tip.v * step}s or longer` : `${tip.v * step}s to ${(tip.v + 1) * step}s`}</span>
+            <span>
+              <b>{(hist[tip.v] ?? 0).toLocaleString('en-GB')}</b> kills
+            </span>
+            {all > 0 && <span className="muted">{(((hist[tip.v] ?? 0) / all) * 100).toFixed(1)}% of kills</span>}
+            {all > 0 && <span className="muted">{Math.round((faster(tip.v) / all) * 100)}% of kills were faster</span>}
+            {tip.v === avgBin && <span style={{ color: 'var(--orange)' }}>Your average is in here</span>}
+          </FloatTip>
+        )}
       </div>
       <div className="axis">
         <span>{edge(first)}</span>
@@ -217,6 +244,7 @@ export function CalendarCard() {
 }
 
 export function CalendarView({ days, error }: { days: CalendarDays | undefined; error?: string | null }) {
+  const { tip, on, hide } = useHoverTip<CalendarDays[number]>();
   return (
     <Card title="Your farming days" side="last 26 weeks, UTC days">
       {!days ? (
@@ -230,10 +258,16 @@ export function CalendarView({ days, error }: { days: CalendarDays | undefined; 
           const lead = (new Date(days[0]?.day ?? 0).getUTCDay() + 6) % 7;
           const cells: (CalendarDays[number] | null)[] = [...Array<null>(lead).fill(null), ...days];
           const level = (p: number) => (p <= 0 ? 0 : Math.min(4, 1 + Math.floor(Math.sqrt(p / max) * 4)));
+          const avgDay = farmed.length > 0 ? farmed.reduce((n, d) => n + d.profit, 0) / farmed.length : 0;
+          const weekday = (t: number) => new Date(t).toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' });
           return (
             <>
-              <div className="cal-wrap" ref={(el) => {
-                  if (el) el.scrollLeft = el.scrollWidth;
+              <div className="tip-host" onPointerLeave={hide}>
+              <div className="cal-wrap" onScroll={hide} ref={(el) => {
+                  if (el && !el.dataset.scrolled) {
+                    el.scrollLeft = el.scrollWidth;
+                    el.dataset.scrolled = '1';
+                  }
                 }}>
                 <div className="cal-days" aria-hidden="true">
                   <span>Mon</span>
@@ -245,10 +279,38 @@ export function CalendarView({ days, error }: { days: CalendarDays | undefined; 
                   <span>Sun</span>
                 </div>
                 <div className="cal" role="img" aria-label={`${farmed.length} days farmed in the last 26 weeks`}>
-                  {cells.map((d, i) =>
-                    d ? <span key={i} className={`cl${level(d.profit)}`} title={`${dayLabel(d.day)}: ${d.kills > 0 ? `${coins(d.profit)} · ${d.kills.toLocaleString('en-GB')} kills` : 'no farming'}`} /> : <span key={i} className="pad" />,
-                  )}
+                  {cells.map((d, i) => (d ? <span key={i} className={`cl${level(d.profit)}`} {...on(d)} /> : <span key={i} className="pad" />))}
                 </div>
+              </div>
+              {tip && (
+                <FloatTip at={tip}>
+                  <span className="px">
+                    {weekday(tip.v.day)} {dayLabel(tip.v.day)}
+                  </span>
+                  {tip.v.kills > 0 ? (
+                    <>
+                      <span>
+                        <b>{coins(tip.v.profit)}</b> profit
+                      </span>
+                      <span className="muted">
+                        {tip.v.kills.toLocaleString('en-GB')} kills · {coins(tip.v.profit / tip.v.kills)} a kill
+                      </span>
+                      {best && tip.v.day === best.day ? (
+                        <span style={{ color: 'var(--orange)' }}>Your best day</span>
+                      ) : (
+                        avgDay > 0 && (
+                          <span className={tip.v.profit >= avgDay ? 'gain' : 'loss'}>
+                            {tip.v.profit >= avgDay ? '+' : '−'}
+                            {Math.round(Math.abs(tip.v.profit / avgDay - 1) * 100)}% vs your average day
+                          </span>
+                        )
+                      )}
+                    </>
+                  ) : (
+                    <span className="muted">No farming</span>
+                  )}
+                </FloatTip>
+              )}
               </div>
               <div className="cal-foot">
                 <span className="muted small">
@@ -281,6 +343,7 @@ export function HeatmapCard() {
 }
 
 export function HeatmapView({ cells, error }: { cells: HeatCells | undefined; error?: string | null }) {
+  const { tip, on, hide } = useHoverTip<number>();
   return (
     <Card title="Your best hours" side="profit per hour of farming, last 4 weeks, UTC">
       {!cells ? (
@@ -294,7 +357,8 @@ export function HeatmapView({ cells, error }: { cells: HeatCells | undefined; er
           });
           return (
             <>
-              <div className="hm-wrap">
+              <div className="tip-host" onPointerLeave={hide}>
+              <div className="hm-wrap" onScroll={hide}>
                 <div className="hm" role="img" aria-label="Profit per hour of farming for each hour of the week">
                   {WEEKDAYS.map((day, d) => (
                     <div className="hm-row" key={day}>
@@ -308,7 +372,7 @@ export function HeatmapView({ cells, error }: { cells: HeatCells | undefined; er
                             key={h}
                             className={v == null ? 'off' : undefined}
                             style={a > 0 ? { background: `rgba(255, 138, 31, ${a.toFixed(3)})` } : undefined}
-                            title={`${day} ${String(h).padStart(2, '0')}:00 UTC: ${v == null ? 'no farming' : `${coins(v)} an hour`}`}
+                            {...on(d * 24 + h)}
                           />
                         );
                       })}
@@ -323,6 +387,34 @@ export function HeatmapView({ cells, error }: { cells: HeatCells | undefined; er
                     ))}
                   </div>
                 </div>
+              </div>
+              {tip &&
+                (() => {
+                  const c = cells[tip.v];
+                  const h = tip.v % 24;
+                  return (
+                    <FloatTip at={tip}>
+                      <span className="px">
+                        {WEEKDAYS[Math.floor(tip.v / 24)]} {String(h).padStart(2, '0')}:00 – {String((h + 1) % 24).padStart(2, '0')}:00 UTC
+                      </span>
+                      {c?.perHour == null ? (
+                        <span className="muted">No farming</span>
+                      ) : (
+                        <>
+                          <span>
+                            <b>{coins(c.perHour)}</b> an hour
+                          </span>
+                          {c.uptimeMs > 0 && (
+                            <span className="muted">
+                              {coins(c.profit)} over {duration(c.uptimeMs)} farmed
+                            </span>
+                          )}
+                          {tip.v === best ? <span style={{ color: 'var(--orange)' }}>Your best hour</span> : <span className="muted">{Math.round((c.perHour / max) * 100)}% of your best hour</span>}
+                        </>
+                      )}
+                    </FloatTip>
+                  );
+                })()}
               </div>
               <span className="muted small">
                 {best >= 0 ? (
@@ -397,11 +489,7 @@ export function PriceView({ points, error, item, setItem }: { points: PricePoint
                   </span>
                 </span>
               </div>
-              <svg viewBox="0 0 1000 200" height="180" width="100%" preserveAspectRatio="none" role="img" aria-label={`${item} price over the last ${Math.round((t1 - t0) / 86_400_000)} days, ${coins(lo)} to ${coins(hi)}`}>
-                <path d="M0 55H1000M0 100H1000M0 145H1000" stroke="rgba(255,255,255,0.06)" fill="none" />
-                <polyline points={ins.filter((p) => p.offer != null).map((p) => `${x(p.t)},${y(p.offer!)}`).join(' ')} stroke="var(--blue)" strokeWidth="2" fill="none" vectorEffect="non-scaling-stroke" />
-                <polyline points={ins.map((p) => `${x(p.t)},${y(p.instant)}`).join(' ')} stroke="var(--orange)" strokeWidth="2.5" fill="none" vectorEffect="non-scaling-stroke" />
-              </svg>
+              <PriceChart ins={ins} x={x} y={y} first={first} label={`${PRICED.find(([k]) => k === item)?.[1] ?? item} price over the last ${Math.round((t1 - t0) / 86_400_000)} days, ${coins(lo)} to ${coins(hi)}`} />
               <div className="axis">
                 <span>{dayLabel(t0)}</span>
                 <span>
@@ -414,6 +502,85 @@ export function PriceView({ points, error, item, setItem }: { points: PricePoint
         })()
       )}
     </Card>
+  );
+}
+
+type PricePoint = { t: number; instant: number; offer: number | null };
+
+/** The two price lines, with the exact prices at the point under the pointer. */
+function PriceChart({ ins, x, y, first, label }: { ins: PricePoint[]; x: (t: number) => number; y: (v: number) => number; first: PricePoint; label: string }) {
+  const [hover, setHover] = useState<number | null>(null);
+  const t0 = ins[0]!.t;
+  const t1 = ins[ins.length - 1]!.t;
+  const h = hover != null ? ins[hover] : undefined;
+  const pct = (a: number, b: number) => `${a >= b ? '+' : '−'}${Math.abs((a / b - 1) * 100).toFixed(1)}%`;
+  return (
+    <div className="chart">
+      <svg
+        viewBox="0 0 1000 200"
+        height="180"
+        width="100%"
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={label}
+        onPointerMove={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          const t = t0 + ((e.clientX - r.left) / r.width) * (t1 - t0);
+          // nearest snapshot by time: the points are sorted, so a binary search finds it
+          let a = 0;
+          let b = ins.length - 1;
+          while (b - a > 1) {
+            const m = (a + b) >> 1;
+            if (ins[m]!.t < t) a = m;
+            else b = m;
+          }
+          setHover(Math.abs(ins[a]!.t - t) <= Math.abs(ins[b]!.t - t) ? a : b);
+        }}
+        onPointerLeave={() => setHover(null)}
+      >
+        <path d="M0 55H1000M0 100H1000M0 145H1000" stroke="rgba(255,255,255,0.06)" fill="none" />
+        <polyline points={ins.filter((p) => p.offer != null).map((p) => `${x(p.t)},${y(p.offer!)}`).join(' ')} stroke="var(--blue)" strokeWidth="2" fill="none" vectorEffect="non-scaling-stroke" />
+        <polyline points={ins.map((p) => `${x(p.t)},${y(p.instant)}`).join(' ')} stroke="var(--orange)" strokeWidth="2.5" fill="none" vectorEffect="non-scaling-stroke" />
+        {h && <path d={`M${x(h.t)} 0V200`} stroke="rgba(255,255,255,0.25)" strokeDasharray="4 4" fill="none" vectorEffect="non-scaling-stroke" />}
+      </svg>
+      {h && (
+        <>
+          <span className="chart-dot" style={{ position: 'absolute', left: `${(x(h.t) / 1000) * 100}%`, top: (y(h.instant) / 200) * 180, width: 9, height: 9, marginLeft: -4.5, marginTop: -4.5, borderRadius: 99, background: 'var(--orange)' }} />
+          {h.offer != null && <span className="chart-dot" style={{ position: 'absolute', left: `${(x(h.t) / 1000) * 100}%`, top: (y(h.offer) / 200) * 180, width: 9, height: 9, marginLeft: -4.5, marginTop: -4.5, borderRadius: 99, background: 'var(--blue)' }} />}
+          <div className="tip" style={{ left: `clamp(0px, calc(${(x(h.t) / 1000) * 100}% + 12px), calc(100% - 220px))` }}>
+            <span className="px">{dateTime(h.t)}</span>
+            <span className="tip-row">
+              <span>
+                <span className="dot" style={{ background: 'var(--orange)' }} /> Instant sell
+              </span>
+              <b>{fullCoins(h.instant)}</b>
+            </span>
+            {h.offer != null && (
+              <span className="tip-row">
+                <span>
+                  <span className="dot" style={{ background: 'var(--blue)' }} /> Sell offer
+                </span>
+                <b>{fullCoins(h.offer)}</b>
+              </span>
+            )}
+            {h.offer != null && h.instant > 0 && (
+              <span className="tip-row muted">
+                <span>Spread</span>
+                <span>
+                  {fullCoins(h.offer - h.instant)} ({((h.offer / h.instant - 1) * 100).toFixed(1)}%)
+                </span>
+              </span>
+            )}
+            {first.instant > 0 && hover! > 0 && (
+              <span className={`tip-row ${Math.abs(h.instant / first.instant - 1) < 0.005 ? 'muted' : h.instant > first.instant ? 'gain' : 'loss'}`}>
+                <span>Since {dayLabel(first.t)}</span>
+                <span>{pct(h.instant, first.instant)}</span>
+              </span>
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 

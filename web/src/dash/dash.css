@@ -146,6 +146,11 @@ a.mrow:hover, .mrow:hover { background: rgba(255, 255, 255, 0.035); color: var(-
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .legend span { display: flex; align-items: center; gap: 6px; font-size: 14px; }
 .tip { position: absolute; top: 12px; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: var(--radius-s); box-shadow: var(--pop-shadow); font-size: 13px; display: flex; flex-direction: column; gap: 2px; min-width: 180px; pointer-events: none; z-index: 2; }
+.tip-host { position: relative; }
+.ftip { transform: translate(-50%, calc(-100% - 8px)); white-space: nowrap; }
+.tip .tip-row { display: flex; justify-content: space-between; gap: 14px; }
+.tip .tip-row > :last-child { font-variant-numeric: tabular-nums; }
+.chart-dot { pointer-events: none; }
 .split { display: flex; height: 26px; border-radius: 999px; overflow: hidden; background: rgba(255, 255, 255, 0.05); }
 .split > span { display: block; height: 100%; }
 
