@@ -34,6 +34,7 @@ export async function harness(dir = mkdtempSync(join(tmpdir(), 'arachne-test-'))
     devAuth: true,
     publicUrl: 'http://localhost:8787',
     bazaar: { enabled: false, pollMs: 1e9, url: '' },
+    cofl: { enabled: false, days: 0, url: '', everyMs: 1e9 },
     backupDir: join(dir, 'backups'),
     discordWebhookUrl: '',
     ...overrides,

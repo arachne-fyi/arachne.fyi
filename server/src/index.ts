@@ -3,6 +3,7 @@ import { createContext } from './context.ts';
 import { buildApp } from './app.ts';
 import { backupState } from './extras.ts';
 import { startBazaarPoller } from './prices.ts';
+import { startCoflBackfill } from './cofl.ts';
 import { blockNetwork, isOffline, offlineConfig, offlineSummary, prepareOffline } from './offline.ts';
 
 // OFFLINE=1 (start-offline.bat): a read-only local copy with no network. See offline.ts.
@@ -18,6 +19,20 @@ if (config.bazaar.enabled) {
     url: config.bazaar.url,
     pollMs: config.bazaar.pollMs,
     log: (msg) => app.log.warn(msg),
+    onUpdate: () => {
+      ctx.stats.invalidate();
+      ctx.hub.publish('prices', { updatedAt: ctx.prices.updatedAt });
+    },
+  });
+}
+
+// Older and missed Bazaar prices from SkyCofl. Our own snapshots always win.
+if (!offline && config.cofl.enabled) {
+  startCoflBackfill(ctx.prices, {
+    baseUrl: config.cofl.url,
+    days: config.cofl.days,
+    everyMs: config.cofl.everyMs,
+    log: (msg) => app.log.info(msg),
     onUpdate: () => {
       ctx.stats.invalidate();
       ctx.hub.publish('prices', { updatedAt: ctx.prices.updatedAt });

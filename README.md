@@ -45,6 +45,7 @@ npm run typecheck
 npm run build                 # production build of web + server
 npm start                     # serve the built dashboard and API on :8787
 npm run rebuild-index         # rebuild data/index.db from the NDJSON files (server stopped)
+npm run backfill-prices -- --days 365   # fill Bazaar price history from SkyCofl (server stopped)
 ```
 
 ## The mod

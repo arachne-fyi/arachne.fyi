@@ -14,6 +14,7 @@
     "schema": "npm run schema -w shared",
     "simulate": "npm run simulate -w server --",
     "seed-year": "npm run seed-year -w server --",
+    "backfill-prices": "npm run backfill-prices -w server --",
     "rebuild-index": "npm run rebuild-index -w server"
   },
   "devDependencies": {

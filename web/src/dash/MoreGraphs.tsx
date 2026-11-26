@@ -497,6 +497,12 @@ export function PriceView({ points, error, item, setItem }: { points: PricePoint
                 </span>
                 <span>{dayLabel(t1)}</span>
               </div>
+              <span className="muted tiny">
+                Older and missed prices provided by{' '}
+                <a href={`https://sky.coflnet.com/item/${item}`} target="_blank" rel="noopener noreferrer">
+                  SkyCofl
+                </a>
+              </span>
             </>
           );
         })()

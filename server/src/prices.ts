@@ -1,6 +1,7 @@
 import { CRYSTAL_RECIPE, NPC_PRICES, PRICE_WATCHLIST, SALVAGE, type ItemId } from '@arachne/shared';
 import type { Db } from './db.ts';
 import type { DayLog } from './store/log.ts';
+import { backfillLine, type CoflPoint } from './cofl.ts';
 
 export interface PriceLine {
   ts: number;
@@ -48,6 +49,29 @@ export class Prices {
       }
     });
     this.latestTs = Math.max(this.latestTs, line.ts);
+  }
+
+  /** Snapshot times of one item in [from, to], oldest first. Used to find gaps to back-fill. */
+  times(item: string, from: number, to: number): number[] {
+    return this.db
+      .all<{ ts: number }>('SELECT ts FROM prices WHERE item = ? AND ts >= ? AND ts <= ? ORDER BY ts', item, from, to)
+      .map((r) => r.ts);
+  }
+
+  /**
+   * Add back-filled points for one item (from SkyCofl, see cofl.ts). They go to the price log
+   * like our own snapshots, so a rebuild keeps them, but don't move `updatedAt`: that stays the
+   * time of our own latest poll. Returns how many were added.
+   */
+  recordBackfill(item: string, points: readonly CoflPoint[]): number {
+    if (points.length === 0) return 0;
+    this.log?.append(points.map((p) => backfillLine(item, p)), Date.now());
+    this.db.tx(() => {
+      for (const p of points) {
+        this.db.run('INSERT OR IGNORE INTO prices (item, ts, instant, offer) VALUES (?, ?, ?, ?)', item, p.ts, p.instant, p.offer);
+      }
+    });
+    return points.length;
   }
 
   /** The Bazaar quote in force at `ts`: the last snapshot at or before it, else the first after. */
