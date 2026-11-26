@@ -9,6 +9,7 @@
 import './landing.css';
 import './site.css';
 import { enhanceSelects } from './dropdown.ts';
+import { itemIcon } from './item-icons.ts';
 import { offlineBanner } from './offline.ts';
 
 const host = location.hostname;
@@ -38,6 +39,11 @@ toggle?.addEventListener('click', () => {
 });
 
 enhanceSelects();
+// Item pictures: any <img data-item="SOUL_STRING"> uses the picture from src/icons/items/ if there is one.
+document.querySelectorAll<HTMLImageElement>('img[data-item]').forEach((img) => {
+  const src = itemIcon(img.dataset.item ?? '');
+  if (src && !img.src.endsWith(src)) img.src = src;
+});
 offlineBanner();
 
 export interface Me {

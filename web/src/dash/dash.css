@@ -288,3 +288,48 @@ a.mrow:hover, .mrow:hover { background: rgba(255, 255, 255, 0.035); color: var(-
 .pro-send { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 24px; }
 .pro-qr { flex: none; width: 176px; height: 176px; border-radius: var(--radius-s); background: var(--surface-2); border: 1px dashed var(--line-strong); display: grid; place-items: center; color: var(--muted); font-size: 14px; }
 .pro-amount { font-size: 30px; line-height: 1.2; font-weight: 800; letter-spacing: -0.03em; overflow-wrap: anywhere; }
+
+/* ---- graphs+ (MoreGraphs.tsx): time to kill, farming days, best hours, prices ---- */
+.graph-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ttk-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 0 6px; color: var(--soft); cursor: pointer; }
+.ttk-tiles { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); gap: 12px; }
+.ttk-main, .ttk-stat { display: flex; flex-direction: column; gap: 2px; padding: 16px 18px; border-radius: var(--radius-s); background: var(--surface-2); min-width: 0; }
+.ttk-main { background: radial-gradient(120% 160% at 0% 0%, rgba(255, 138, 31, 0.2), transparent 60%), var(--surface-2); }
+.ttk-big { font-size: 52px; }
+.hist { display: flex; align-items: flex-end; gap: 3px; height: 180px; padding-bottom: 2px; border-bottom: 1px solid var(--line); }
+.hist > span { flex: 1 1 0; min-width: 0; border-radius: 4px 4px 1px 1px; background: rgba(106, 168, 255, 0.45); }
+.hist > span:hover { background: var(--blue); }
+.hist > span.on { background: var(--orange); }
+
+.cal-wrap { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.cal-days { display: grid; grid-template-rows: repeat(7, 13px); gap: 3px; font-size: 10px; line-height: 13px; color: var(--muted); }
+.cal { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 13px); grid-auto-columns: 13px; gap: 3px; }
+.cal > span, .cal-key i { display: block; width: 13px; height: 13px; border-radius: 3px; background: var(--surface-2); }
+.cal > span.pad { background: transparent; }
+.cl1 { background: rgba(255, 138, 31, 0.28) !important; }
+.cl2 { background: rgba(255, 138, 31, 0.5) !important; }
+.cl3 { background: rgba(255, 138, 31, 0.75) !important; }
+.cl4 { background: var(--orange) !important; }
+.cal-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.cal-key { display: inline-flex; align-items: center; gap: 3px; }
+.cal-key i { width: 11px; height: 11px; }
+
+.hm-wrap { overflow-x: auto; }
+.hm { display: flex; flex-direction: column; gap: 3px; min-width: 420px; }
+.hm-row { display: grid; grid-template-columns: 30px repeat(24, minmax(0, 1fr)); gap: 3px; align-items: center; }
+.hm-row > span:not(.hm-day) { height: 16px; border-radius: 3px; background: var(--surface-2); }
+.hm-row > span.off { background: rgba(255, 255, 255, 0.025); }
+.hm-hours > span:not(.hm-day) { height: auto; background: none !important; font-size: 10px; }
+.price-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.price-head .legend { margin-left: auto; }
+
+@media (max-width: 760px) {
+  .ttk-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ttk-main { grid-column: 1 / -1; }
+  .ttk-big { font-size: 40px; }
+  .graph-controls { width: 100%; }
+  .hm { min-width: 0; }
+  .hm-row { grid-template-columns: 26px repeat(24, minmax(0, 1fr)); gap: 2px; }
+}
+.item-pic { width: 20px; height: 20px; flex: none; image-rendering: pixelated; }
+.item-line { display: inline-flex; align-items: center; gap: 6px; }

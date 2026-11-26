@@ -8,6 +8,7 @@ import { platform, type Group } from '../platform-api.ts';
 import { ESSENCE, EMPTY, SOUL, WINDOWS, WIN_WORDS, accountState, accountsOf, groupLoot, killsOf, lootOf, meId, openFights, sumSeries, tierWord, timer, type User, type Win } from './data.ts';
 import { Avatar, Card, CopyButton, Loading, Seg, colourAt } from './ui.tsx';
 import { linkTo, type Go } from './App.tsx';
+import { itemIcon } from '../item-icons.ts';
 
 export function Home({ group, user, go }: { group: Group; user: User; go: Go }) {
   const [win, setWin] = useState<Win>('today');
@@ -61,10 +62,10 @@ export function Home({ group, user, go }: { group: Group; user: User; go: Go }) 
       </section>
 
       <section className="tiles" aria-label="What the group farmed">
-        <Res ico="coin" cls="ico-coins" label="Scavenger coins" value={coins(t.coins)} sub={gross > 0 ? `${Math.round((t.coins / gross) * 100)}% of everything farmed` : 'none yet'} />
-        <Res ico="string" cls="ico-string" label="Soul String" value={loot.data ? int(soul.count) : '…'} sub={soul.value > 0 ? `worth ${coins(soul.value)}` : 'none yet'} />
-        <Res ico="essence" cls="ico-essence" label="Spider Essence" value={loot.data ? int(ess.count) : '…'} sub={ess.value > 0 ? `worth ${coins(ess.value)}` : 'none yet'} />
-        <Res ico="kill" cls="ico-kills" label="Kills" value={int(t.kills)} sub={`${int(t.crystals)} crystals · ${int(t.callings)} callings`} />
+        <Res ico="COINS" cls="ico-coins" label="Scavenger coins" value={coins(t.coins)} sub={gross > 0 ? `${Math.round((t.coins / gross) * 100)}% of everything farmed` : 'none yet'} />
+        <Res ico="SOUL_STRING" cls="ico-string" label="Soul String" value={loot.data ? int(soul.count) : '…'} sub={soul.value > 0 ? `worth ${coins(soul.value)}` : 'none yet'} />
+        <Res ico="ESSENCE_SPIDER" cls="ico-essence" label="Spider Essence" value={loot.data ? int(ess.count) : '…'} sub={ess.value > 0 ? `worth ${coins(ess.value)}` : 'none yet'} />
+        <Res ico="KILL" cls="ico-kills" label="Kills" value={int(t.kills)} sub={`${int(t.crystals)} crystals · ${int(t.callings)} callings`} />
       </section>
 
       <div className="cols">
@@ -172,12 +173,13 @@ export function Home({ group, user, go }: { group: Group; user: User; go: Go }) 
   );
 }
 
-/** One total with its item picture (public/icons/<ico>.svg). */
-function Res({ ico, cls, label, value, sub }: { ico: 'coin' | 'string' | 'essence' | 'kill'; cls: string; label: string; value: string; sub: string }) {
+/** One total with its item picture (src/item-icons.ts). */
+function Res({ ico, cls, label, value, sub }: { ico: string; cls: string; label: string; value: string; sub: string }) {
+  const src = itemIcon(ico);
   return (
     <div className="panel res">
       <span className={`ico ${cls}`} aria-hidden="true">
-        <img src={`/icons/${ico}.svg`} alt="" width={32} height={32} />
+        {src && <img src={src} alt="" width={32} height={32} />}
       </span>
       <span className="res-words">
         <span className="muted small">{label}</span>

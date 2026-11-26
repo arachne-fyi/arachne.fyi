@@ -8,6 +8,7 @@ import type { User } from './auth.ts';
 import type { Context } from './context.ts';
 import { toFacts } from './indexer.ts';
 import { RARE_DROPS } from './insights.ts';
+import { privateUsers } from './platform.ts';
 import { priceColumn } from './stats.ts';
 import { ingestHealth } from './fun.ts';
 import { DatabaseSync } from 'node:sqlite';
@@ -437,6 +438,40 @@ export function registerExtras(app: FastifyInstance, ctx: Context, requireUser: 
     const days = Number.isFinite(n) && n >= 0 ? Math.min(n, 3650) : fallback;
     return days === 0 ? 0 : Date.now() - days * DAY;
   };
+
+  /**
+   * Time to kill. scope=me: your accounts; group=<id>: that group's members (as /api/loot does).
+   * days: 1 (hourly buckets), 7 or 30 (daily buckets). Spawn-ins are looked up among everyone
+   * you share a group with, so a member who never places still gets them.
+   */
+  app.get('/api/ttk', async (req, reply) => {
+    const user = requireUser(req, reply);
+    if (!user) return;
+    const q = req.query as { scope?: string; group?: string; days?: string };
+    const days = q.days === '1' ? 1 : q.days === '30' ? 30 : 7;
+    const mates = new Set<number>([user.id]);
+    for (const r of db.all<{ user_id: number }>(
+      'SELECT m2.user_id FROM state.group_members m1 JOIN state.group_members m2 ON m2.group_id = m1.group_id WHERE m1.user_id = ?',
+      user.id,
+    )) {
+      mates.add(r.user_id);
+    }
+    let ids: string[];
+    if (q.group !== undefined) {
+      const group = Number(q.group);
+      if (!Number.isInteger(group) || !db.get('SELECT 1 AS ok FROM state.group_members WHERE group_id = ? AND user_id = ?', group, user.id)) return reply.code(404).send({ error: 'unknown_group' });
+      const hidden = privateUsers(ctx);
+      ids = db
+        .all<{ user_id: number }>('SELECT user_id FROM state.group_members WHERE group_id = ?', group)
+        .filter((r) => !hidden.has(r.user_id) || r.user_id === user.id)
+        .flatMap((r) => stats.accountIds(r.user_id));
+    } else {
+      ids = stats.accountIds(user.id);
+    }
+    const placers = [...mates].flatMap((id) => stats.accountIds(id));
+    const now = Date.now();
+    return { days, ...ctx.views.ttk(ids, placers, now - days * DAY, days === 1 ? 3_600_000 : DAY) };
+  });
 
   app.get('/api/drop-rates', async (req, reply) => {
     const user = requireUser(req, reply);

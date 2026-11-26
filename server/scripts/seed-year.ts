@@ -153,10 +153,21 @@ const baseKillValue =
   0.003 * NPC_PRICES.TARANTULA_LEGENDARY +
   0.8 * 1_450; // Scavenger coins: 80%, 400-2,499
 const crystalCost = Object.entries(CRYSTAL_RECIPE).reduce((a, [item, qty]) => a + AVG[item]! * qty!, 0);
-// One boss every ~34.5s (12s fight + 22.5s to the next spawn), so ~104 fights an hour.
+// Fights take 6-18s, most around 12s (three dice added up), and the group gets ~14% faster
+// over the period (1.12x at the start, 0.96x now). 2% of fights drag on 8-25s longer.
 const FIGHT_MS = 12_000;
+const SKILL_START = 1.12;
+const SKILL_END = 0.96;
+const SLOW = { chance: 0.02, extraMs: 16_500 };
+const fightMean = FIGHT_MS * ((SKILL_START + SKILL_END) / 2) + SLOW.chance * SLOW.extraMs;
+// The next boss spawns 18-27s after a death (the crystal's spawn-in), so ~105 fights an hour.
 const GAP_MS = 22_500;
-const fightsPerHour = 3_600_000 / (FIGHT_MS + GAP_MS);
+const fightsPerHour = 3_600_000 / (fightMean + GAP_MS);
+const fightLength = (ts: number) => {
+  const skill = SKILL_START + (SKILL_END - SKILL_START) * Math.min(1, Math.max(0, (ts - start) / (now - start)));
+  const base = rand(2_000, 6_001) + rand(2_000, 6_001) + rand(2_000, 6_001);
+  return Math.round(base * skill) + (chance(SLOW.chance) ? rand(8_000, 25_001) : 0);
+};
 const AFK = 0.015; // chance an account does no damage on a boss (no kill, no drops)
 const killsPerFight = PEOPLE.length * (1 - AFK);
 /** Soul String per kill on average, chosen so the group lands on PER_HOUR after crystal costs. */
@@ -245,8 +256,11 @@ const lines = new Map(users.map((u) => [u.uuid, [] as EventLine[]]));
 let fights = 0;
 for (const s of sessions) {
   let spawn = s.from;
+  let lastDeath = s.from - 60_000;
   while (spawn < s.to) {
-    const death = spawn + rand(FIGHT_MS - 6_000, FIGHT_MS + 6_000);
+    const death = spawn + fightLength(spawn);
+    // The crystal goes down 14-20s before the spawn (most around 17s), after the last boss died.
+    const spawnIn = Math.min(rand(7_000, 10_001) + rand(7_000, 10_001), Math.max(1_000, spawn - lastDeath - 500));
     for (const u of users) {
       const out = lines.get(u.uuid)!;
       const fight = id().slice(0, 16);
@@ -255,7 +269,7 @@ for (const s of sessions) {
         const event = Event.parse({ id: id(), ...e });
         out.push({ r: (event.ts as number) + rand(2_000, 8_000), u: u.id, a: u.uuid, n: u.mc, k: 0, e: event });
       };
-      if (u.places) push({ ts: spawn - rand(15_000, 18_000), kind: 'PLACE', item: 'ARACHNE_CRYSTAL', count: 1, fight });
+      if (u.places) push({ ts: spawn - spawnIn, kind: 'PLACE', item: 'ARACHNE_CRYSTAL', count: 1, fight });
       push({ ts: spawn, kind: 'SPAWN', fight, tier: 'CRYSTAL', confirmed: true });
       push({ ts: death, kind: 'DEATH', fight });
       const damage = chance(AFK) ? 0 : rand(60_000, 900_000);
@@ -268,6 +282,7 @@ for (const s of sessions) {
       }
     }
     fights++;
+    lastDeath = death;
     // The next crystal goes down right after this boss dies, so its spawn is 18-27s later.
     spawn = death + rand(GAP_MS - 4_500, GAP_MS + 4_500);
   }

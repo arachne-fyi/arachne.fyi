@@ -259,6 +259,18 @@ export class Insights {
 }
 
 const WEEK_HOURS = 7 * 24;
+/** A crystal or the last calling fragment placed this long before a spawn counts as its spawn-in. */
+const TTK_PLACE_WINDOW_MS = 60_000;
+/** Longer "fights" are a boss left alone, not a kill time worth averaging. */
+const TTK_MAX_FIGHT_MS = 5 * 60_000;
+const TTK_BIN_MS = 2_000;
+const TTK_BINS = 30;
+interface TtkBucket {
+  start: number;
+  kills: number;
+  avgFightMs: number;
+  avgSpawnMs: number | null;
+}
 /** Fights older than this are settled: their drop-rate totals are cached (Views.tierDrops). */
 const DROPS_SETTLE_MS = 15 * 60_000;
 /** The drop-rate cache is thrown away and rebuilt this often. */
@@ -462,6 +474,74 @@ export class Views {
       INSTANT_SELL: this.stats.totals(ids, from, to, 'INSTANT_SELL').profit,
       SELL_OFFER: this.stats.totals(ids, from, to, 'SELL_OFFER').profit,
       NPC: this.stats.totals(ids, from, to, 'NPC').profit,
+    };
+  }
+
+  /**
+   * Time to kill: how long each killed boss lived (spawn to death), and how long its spawn-in
+   * took (the last crystal or calling fragment placed, to the spawn). The spawn-in comes from
+   * whoever placed it, so `placers` is a wider set of accounts than `ids` (your group mates):
+   * a member who never places still sees the spawn-in of the bosses they fought.
+   * Only confirmed spawns count, so a boss recovered from later activity can't look instant.
+   */
+  ttk(ids: readonly string[], placers: readonly string[], from: number, bucketMs: number) {
+    const empty = { kills: 0, withSpawn: 0, avgFightMs: null as number | null, avgSpawnMs: null as number | null, medianFightMs: null as number | null, bestFightMs: null as number | null, buckets: [] as TtkBucket[], fightHist: [] as number[], totalHist: [] as number[], binMs: TTK_BIN_MS };
+    if (ids.length === 0) return empty;
+    const pool = placers.length > 0 ? placers : ids;
+    const rows = this.db.all<{ d: number; fm: number; sm: number | null }>(
+      `SELECT f.death_ts AS d, f.death_ts - f.spawn_ts AS fm,
+              f.spawn_ts - (SELECT MAX(e.ts) FROM events e
+                            WHERE e.kind = 'PLACE' AND e.account IN (${placeholders(pool.length)})
+                              AND e.ts > f.spawn_ts - ${TTK_PLACE_WINDOW_MS} AND e.ts <= f.spawn_ts) AS sm
+       FROM fights f
+       WHERE f.account IN (${placeholders(ids.length)}) AND f.death_ts >= ? AND f.confirmed = 1
+         AND f.spawn_ts IS NOT NULL AND f.death_ts > f.spawn_ts AND f.death_ts - f.spawn_ts <= ${TTK_MAX_FIGHT_MS} AND ${KILL}
+       ORDER BY f.death_ts`,
+      ...pool,
+      ...ids,
+      from,
+    );
+    if (rows.length === 0) return empty;
+    let fightSum = 0;
+    let spawnSum = 0;
+    let spawnN = 0;
+    const buckets = new Map<number, { kills: number; fight: number; spawn: number; spawnN: number }>();
+    for (const r of rows) {
+      fightSum += r.fm;
+      const b = Math.floor(r.d / bucketMs) * bucketMs;
+      const x = buckets.get(b) ?? { kills: 0, fight: 0, spawn: 0, spawnN: 0 };
+      x.kills++;
+      x.fight += r.fm;
+      if (r.sm != null && r.sm >= 0) {
+        spawnSum += r.sm;
+        spawnN++;
+        x.spawn += r.sm;
+        x.spawnN++;
+      }
+      buckets.set(b, x);
+    }
+    const avgSpawn = spawnN > 0 ? spawnSum / spawnN : null;
+    // Histograms in TTK_BIN_MS steps; the last bin holds everything longer.
+    const fightHist = new Array<number>(TTK_BINS).fill(0);
+    const totalHist = new Array<number>(TTK_BINS).fill(0);
+    const bin = (ms: number) => Math.min(TTK_BINS - 1, Math.floor(ms / TTK_BIN_MS));
+    for (const r of rows) {
+      fightHist[bin(r.fm)]!++;
+      // A boss whose spawn-in we never saw gets the average spawn-in, so both modes count every kill.
+      totalHist[bin(r.fm + (r.sm != null && r.sm >= 0 ? r.sm : (avgSpawn ?? 0)))]!++;
+    }
+    const sorted = rows.map((r) => r.fm).sort((a, b) => a - b);
+    return {
+      kills: rows.length,
+      withSpawn: spawnN,
+      avgFightMs: fightSum / rows.length,
+      avgSpawnMs: avgSpawn,
+      medianFightMs: sorted[Math.floor(sorted.length / 2)]!,
+      bestFightMs: sorted[0]!,
+      buckets: [...buckets].map(([start, x]) => ({ start, kills: x.kills, avgFightMs: x.fight / x.kills, avgSpawnMs: x.spawnN > 0 ? x.spawn / x.spawnN : null })),
+      fightHist,
+      totalHist,
+      binMs: TTK_BIN_MS,
     };
   }
 
