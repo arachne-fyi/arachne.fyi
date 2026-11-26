@@ -1,7 +1,7 @@
 /*
  * Fill the Bazaar price history from SkyCofl, for every item the server tracks.
  *
- *   npm run backfill-prices                  # last 90 days (COFL_BACKFILL_DAYS)
+ *   npm run backfill-prices                  # last 5 years (COFL_BACKFILL_DAYS)
  *   npm run backfill-prices -- --days 365    # further back
  *
  * The server also does this by itself a little after it starts and every 6 hours, so this is

@@ -86,7 +86,7 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
     },
     cofl: {
       enabled: env.COFL_BACKFILL === undefined ? true : flag(env.COFL_BACKFILL),
-      days: int(env.COFL_BACKFILL_DAYS, 90),
+      days: int(env.COFL_BACKFILL_DAYS, 5 * 365),
       url: env.COFL_URL ?? 'https://sky.coflnet.com',
       everyMs: int(env.COFL_BACKFILL_EVERY_MS, 6 * 3_600_000),
     },

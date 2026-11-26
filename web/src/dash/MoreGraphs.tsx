@@ -1,7 +1,7 @@
 /* More cards for the Graphs page: time to kill (with or without the spawn-in), farming days,
    best hours of the week and Bazaar price history. Each has a live version and a plain view
    that the free plan's locked preview fills with example numbers. Styles: dash.css "graphs+". */
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { api, type Ttk } from '../api.ts';
 import { coins, dateTime, dayLabel, duration, fullCoins, shortClock } from '../format.ts';
 import { useLive } from '../hooks.ts';
@@ -443,41 +443,138 @@ const PRICED = [
 type Priced = (typeof PRICED)[number][0];
 export type PricePoints = { t: number; instant: number | null; offer: number | null }[];
 
-export function PriceCard() {
-  const [item, setItem] = useState<Priced>('SOUL_STRING');
-  const h = useLive(() => api.priceHistory(item, 30), [item], 600_000);
-  return <PriceView points={h.data?.item === item ? h.data.points : undefined} error={h.error} item={item} setItem={setItem} />;
+const HOUR = 3_600_000;
+const DAY_MS = 86_400_000;
+const SPANS = [
+  ['1d', '1d'],
+  ['5d', '5d'],
+  ['1m', '1m'],
+  ['3m', '3m'],
+  ['6m', '6m'],
+  ['1y', '1y'],
+  ['5y', '5y'],
+] as const;
+type Span = (typeof SPANS)[number][0];
+const SPAN_MS: Record<Span, number> = { '1d': DAY_MS, '5d': 5 * DAY_MS, '1m': 30 * DAY_MS, '3m': 91 * DAY_MS, '6m': 182 * DAY_MS, '1y': 365 * DAY_MS, '5y': 5 * 365 * DAY_MS };
+const SPAN_WORDS: Record<Span, string> = { '1d': '24 hours', '5d': '5 days', '1m': '1 month', '3m': '3 months', '6m': '6 months', '1y': '1 year', '5y': '5 years' };
+/** Zooming stops at an hour in and 5 years out. */
+const MIN_SPAN = HOUR;
+const MAX_SPAN = SPAN_MS['5y'];
+
+/** The visible stretch of the price chart. `span` is the preset it came from, null after zooming. */
+export interface PriceWindow {
+  from: number;
+  to: number;
+  span: Span | null;
+}
+export const priceWindow = (span: Span, now = Date.now()): PriceWindow => ({ from: now - SPAN_MS[span], to: now, span });
+
+/** "3 days", "7 weeks", "2.5 years": how long a zoomed window is. */
+function spanWords(w: PriceWindow): string {
+  if (w.span) return SPAN_WORDS[w.span];
+  const ms = w.to - w.from;
+  if (ms < 2 * DAY_MS) return `${Math.max(1, Math.round(ms / HOUR))} hours`;
+  if (ms < 60 * DAY_MS) return `${Math.round(ms / DAY_MS)} days`;
+  if (ms < 730 * DAY_MS) return `${Math.round(ms / (30.4 * DAY_MS))} months`;
+  return `${(ms / (365 * DAY_MS)).toFixed(1).replace(/\.0$/, '')} years`;
 }
 
-export function PriceView({ points, error, item, setItem }: { points: PricePoints | undefined; error?: string | null; item: Priced; setItem: (i: Priced) => void }) {
+/** Axis and tooltip labels that suit the window: clock times for a day, dates for months, month and year beyond. */
+function timeLabel(span: number): (t: number) => string {
+  if (span <= 2 * DAY_MS) return shortClock;
+  if (span <= 400 * DAY_MS) return dayLabel;
+  return (t) => new Date(t).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+}
+
+/** Zoom a window by `factor` around the time `at`, kept inside the last 5 years and not past now. */
+export function zoomWindow(w: PriceWindow, factor: number, at: number, now = Date.now()): PriceWindow {
+  const span = Math.min(MAX_SPAN, Math.max(MIN_SPAN, (w.to - w.from) * factor));
+  const f = (at - w.from) / Math.max(1, w.to - w.from);
+  let from = at - f * span;
+  let to = from + span;
+  if (to > now) {
+    to = now;
+    from = now - span;
+  }
+  if (from < now - MAX_SPAN) {
+    from = now - MAX_SPAN;
+    to = Math.min(now, from + span);
+  }
+  return { from, to, span: null };
+}
+
+export function PriceCard() {
+  const [item, setItem] = useState<Priced>('SOUL_STRING');
+  const [view, setView] = useState<PriceWindow>(() => priceWindow('1m'));
+  // Ask the server once the wheel settles; meanwhile the chart redraws what it already has.
+  const [asked, setAsked] = useState(view);
+  useEffect(() => {
+    const t = setTimeout(() => setAsked(view), 250);
+    return () => clearTimeout(t);
+  }, [view]);
+  const h = useLive(() => api.priceRange(item, Math.floor(asked.from), Math.ceil(asked.to)), [item, asked.from, asked.to], 600_000);
+  return (
+    <PriceView
+      points={h.data?.item === item ? h.data.points : undefined}
+      bucketMs={h.data?.bucketMs ?? HOUR}
+      loading={!h.data || h.data.item !== item || h.data.from > Math.ceil(asked.from) + 60_000 || Math.abs(h.data.to - asked.to) > 60_000}
+      error={h.error}
+      item={item}
+      setItem={setItem}
+      view={view}
+      setView={setView}
+    />
+  );
+}
+
+export function PriceView({
+  points,
+  bucketMs,
+  loading,
+  error,
+  item,
+  setItem,
+  view,
+  setView,
+}: {
+  points: PricePoints | undefined;
+  bucketMs: number;
+  loading?: boolean;
+  error?: string | null;
+  item: Priced;
+  setItem: (i: Priced) => void;
+  view: PriceWindow;
+  setView: (w: PriceWindow) => void;
+}) {
+  const name = PRICED.find(([k]) => k === item)?.[1] ?? item;
+  const span = view.to - view.from;
+  const label = timeLabel(span);
+  const ins = (points ?? []).filter((p) => p.instant != null && p.t >= view.from - bucketMs && p.t <= view.to) as PricePoint[];
   return (
     <Card title="Bazaar prices" side={<Seg label="Item" value={item} options={PRICED} onChange={setItem} />}>
       {!points ? (
         <Loading error={error} />
-      ) : points.filter((p) => p.instant != null).length < 2 ? (
-        <p className="empty small">Not enough price history yet. The server takes a snapshot every few minutes.</p>
       ) : (
         (() => {
-          const ins = points.filter((p) => p.instant != null) as { t: number; instant: number; offer: number | null }[];
           const vals = ins.flatMap((p) => [p.instant, p.offer ?? p.instant]);
-          const lo = Math.min(...vals);
-          const hi = Math.max(...vals);
+          const lo = vals.length ? Math.min(...vals) : 0;
+          const hi = vals.length ? Math.max(...vals) : 1;
           const pad = Math.max(1, (hi - lo) * 0.15);
-          const t0 = ins[0]!.t;
-          const t1 = ins[ins.length - 1]!.t;
-          const x = (t: number) => ((t - t0) / Math.max(1, t1 - t0)) * 1000;
+          const x = (t: number) => ((t - view.from) / Math.max(1, span)) * 1000;
           const y = (v: number) => 190 - ((v - (lo - pad)) / (hi + pad - (lo - pad))) * 180;
-          const now = ins[ins.length - 1]!;
-          const first = ins[0]!;
-          const change = first.instant > 0 ? now.instant / first.instant - 1 : 0;
+          const last = ins[ins.length - 1];
+          const first = ins[0];
+          const change = first && last && first.instant > 0 ? last.instant / first.instant - 1 : 0;
           return (
             <>
               <div className="price-head">
-                <span className="px res-value">{coins(now.instant)}</span>
-                <span className={`small ${Math.abs(change) < 0.005 ? 'muted' : change > 0 ? 'gain' : 'loss'}`}>
-                  {change >= 0 ? '+' : '−'}
-                  {Math.abs(change * 100).toFixed(1)}% in {Math.round((t1 - t0) / 86_400_000)} days
-                </span>
+                {last ? <span className="px res-value">{coins(last.instant)}</span> : <span className="px res-value muted">–</span>}
+                {ins.length >= 2 && (
+                  <span className={`small ${Math.abs(change) < 0.005 ? 'muted' : change > 0 ? 'gain' : 'loss'}`}>
+                    {change >= 0 ? '+' : '−'}
+                    {Math.abs(change * 100).toFixed(1)}% in {spanWords(view)}
+                  </span>
+                )}
                 <span className="legend">
                   <span>
                     <span className="dot" style={{ background: 'var(--orange)' }} />
@@ -489,13 +586,25 @@ export function PriceView({ points, error, item, setItem }: { points: PricePoint
                   </span>
                 </span>
               </div>
-              <PriceChart ins={ins} x={x} y={y} first={first} label={`${PRICED.find(([k]) => k === item)?.[1] ?? item} price over the last ${Math.round((t1 - t0) / 86_400_000)} days, ${coins(lo)} to ${coins(hi)}`} />
+              <div className="price-ranges">
+                <Seg<Span | 'zoomed'> label="Time range" value={view.span ?? 'zoomed'} options={SPANS} onChange={(s) => s !== 'zoomed' && setView(priceWindow(s))} />
+                <span className="muted tiny">{loading ? 'Loading…' : 'Scroll on the chart to zoom'}</span>
+              </div>
+              <PriceChart
+                ins={ins}
+                x={x}
+                y={y}
+                first={first}
+                bucketMs={bucketMs}
+                timeLabel={bucketMs < DAY_MS ? dateTime : span > 400 * DAY_MS ? (t) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : dayLabel}
+                onZoom={(factor, f) => setView(zoomWindow(view, factor, view.from + f * span))}
+                label={`${name} price over ${spanWords(view)}, ${coins(lo)} to ${coins(hi)}`}
+                empty={ins.length < 2 ? (loading ? 'Loading…' : 'No price history for this stretch yet.') : null}
+              />
               <div className="axis">
-                <span>{dayLabel(t0)}</span>
-                <span>
-                  {coins(lo)} – {coins(hi)}
-                </span>
-                <span>{dayLabel(t1)}</span>
+                <span>{label(view.from)}</span>
+                <span>{ins.length >= 2 ? `${coins(lo)} – ${coins(hi)}` : ''}</span>
+                <span>{view.to >= Date.now() - 5 * 60_000 ? 'now' : label(view.to)}</span>
               </div>
               <span className="muted tiny">
                 Older and missed prices provided by{' '}
@@ -513,15 +622,53 @@ export function PriceView({ points, error, item, setItem }: { points: PricePoint
 
 type PricePoint = { t: number; instant: number; offer: number | null };
 
-/** The two price lines, with the exact prices at the point under the pointer. */
-function PriceChart({ ins, x, y, first, label }: { ins: PricePoint[]; x: (t: number) => number; y: (v: number) => number; first: PricePoint; label: string }) {
+/** The two price lines, with the exact prices at the point under the pointer. The wheel zooms. */
+function PriceChart({
+  ins,
+  x,
+  y,
+  first,
+  bucketMs,
+  timeLabel: when,
+  onZoom,
+  label,
+  empty,
+}: {
+  ins: PricePoint[];
+  x: (t: number) => number;
+  y: (v: number) => number;
+  first: PricePoint | undefined;
+  bucketMs: number;
+  timeLabel: (t: number) => string;
+  /** factor > 1 zooms out; f is where the pointer is, 0 (left) to 1 (right). */
+  onZoom: (factor: number, f: number) => void;
+  label: string;
+  empty: string | null;
+}) {
   const [hover, setHover] = useState<number | null>(null);
-  const t0 = ins[0]!.t;
-  const t1 = ins[ins.length - 1]!.t;
+  const box = useRef<HTMLDivElement>(null);
+  const zoom = useRef(onZoom);
+  zoom.current = onZoom;
+  // A non-passive listener, so the page doesn't scroll while the wheel zooms the chart.
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const wheel = (e: WheelEvent) => {
+      if (e.deltaY === 0) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect();
+      const f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+      // Down (or pinch out) shows more history, up shows less. Bigger flicks zoom further.
+      zoom.current(Math.pow(1.0015, Math.max(-300, Math.min(300, e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY))), f);
+    };
+    el.addEventListener('wheel', wheel, { passive: false });
+    return () => el.removeEventListener('wheel', wheel);
+  }, []);
   const h = hover != null ? ins[hover] : undefined;
   const pct = (a: number, b: number) => `${a >= b ? '+' : '−'}${Math.abs((a / b - 1) * 100).toFixed(1)}%`;
+  const bucketWords = bucketMs >= DAY_MS ? `${Math.round(bucketMs / DAY_MS)} day${bucketMs >= 2 * DAY_MS ? 's' : ''}` : bucketMs >= HOUR ? `${Math.round(bucketMs / HOUR)} hour${bucketMs >= 2 * HOUR ? 's' : ''}` : `${Math.round(bucketMs / 60_000)} minutes`;
   return (
-    <div className="chart">
+    <div className="chart price-chart" ref={box}>
       <svg
         viewBox="0 0 1000 200"
         height="180"
@@ -530,31 +677,37 @@ function PriceChart({ ins, x, y, first, label }: { ins: PricePoint[]; x: (t: num
         role="img"
         aria-label={label}
         onPointerMove={(e) => {
+          if (ins.length === 0) return;
           const r = e.currentTarget.getBoundingClientRect();
-          const t = t0 + ((e.clientX - r.left) / r.width) * (t1 - t0);
-          // nearest snapshot by time: the points are sorted, so a binary search finds it
+          const px = ((e.clientX - r.left) / r.width) * 1000;
+          // nearest point on screen: the points are sorted, so a binary search finds it
           let a = 0;
           let b = ins.length - 1;
           while (b - a > 1) {
             const m = (a + b) >> 1;
-            if (ins[m]!.t < t) a = m;
+            if (x(ins[m]!.t) < px) a = m;
             else b = m;
           }
-          setHover(Math.abs(ins[a]!.t - t) <= Math.abs(ins[b]!.t - t) ? a : b);
+          setHover(Math.abs(x(ins[a]!.t) - px) <= Math.abs(x(ins[b]!.t) - px) ? a : b);
         }}
         onPointerLeave={() => setHover(null)}
       >
         <path d="M0 55H1000M0 100H1000M0 145H1000" stroke="rgba(255,255,255,0.06)" fill="none" />
-        <polyline points={ins.filter((p) => p.offer != null).map((p) => `${x(p.t)},${y(p.offer!)}`).join(' ')} stroke="var(--blue)" strokeWidth="2" fill="none" vectorEffect="non-scaling-stroke" />
-        <polyline points={ins.map((p) => `${x(p.t)},${y(p.instant)}`).join(' ')} stroke="var(--orange)" strokeWidth="2.5" fill="none" vectorEffect="non-scaling-stroke" />
-        {h && <path d={`M${x(h.t)} 0V200`} stroke="rgba(255,255,255,0.25)" strokeDasharray="4 4" fill="none" vectorEffect="non-scaling-stroke" />}
+        {!empty && (
+          <>
+            <polyline points={ins.filter((p) => p.offer != null).map((p) => `${x(p.t)},${y(p.offer!)}`).join(' ')} stroke="var(--blue)" strokeWidth="2" fill="none" vectorEffect="non-scaling-stroke" />
+            <polyline points={ins.map((p) => `${x(p.t)},${y(p.instant)}`).join(' ')} stroke="var(--orange)" strokeWidth="2.5" fill="none" vectorEffect="non-scaling-stroke" />
+          </>
+        )}
+        {h && !empty && <path d={`M${x(h.t)} 0V200`} stroke="rgba(255,255,255,0.25)" strokeDasharray="4 4" fill="none" vectorEffect="non-scaling-stroke" />}
       </svg>
-      {h && (
+      {empty && <span className="price-empty muted small">{empty}</span>}
+      {h && !empty && (
         <>
-          <span className="chart-dot" style={{ position: 'absolute', left: `${(x(h.t) / 1000) * 100}%`, top: (y(h.instant) / 200) * 180, width: 9, height: 9, marginLeft: -4.5, marginTop: -4.5, borderRadius: 99, background: 'var(--orange)' }} />
-          {h.offer != null && <span className="chart-dot" style={{ position: 'absolute', left: `${(x(h.t) / 1000) * 100}%`, top: (y(h.offer) / 200) * 180, width: 9, height: 9, marginLeft: -4.5, marginTop: -4.5, borderRadius: 99, background: 'var(--blue)' }} />}
+          <span className="chart-dot" style={{ left: `${(x(h.t) / 1000) * 100}%`, top: (y(h.instant) / 200) * 180, background: 'var(--orange)' }} />
+          {h.offer != null && <span className="chart-dot" style={{ left: `${(x(h.t) / 1000) * 100}%`, top: (y(h.offer) / 200) * 180, background: 'var(--blue)' }} />}
           <div className="tip" style={{ left: `clamp(0px, calc(${(x(h.t) / 1000) * 100}% + 12px), calc(100% - 220px))` }}>
-            <span className="px">{dateTime(h.t)}</span>
+            <span className="px">{when(h.t)}</span>
             <span className="tip-row">
               <span>
                 <span className="dot" style={{ background: 'var(--orange)' }} /> Instant sell
@@ -577,12 +730,13 @@ function PriceChart({ ins, x, y, first, label }: { ins: PricePoint[]; x: (t: num
                 </span>
               </span>
             )}
-            {first.instant > 0 && hover! > 0 && (
+            {first && first.instant > 0 && hover! > 0 && (
               <span className={`tip-row ${Math.abs(h.instant / first.instant - 1) < 0.005 ? 'muted' : h.instant > first.instant ? 'gain' : 'loss'}`}>
-                <span>Since {dayLabel(first.t)}</span>
+                <span>Since {when(first.t)}</span>
                 <span>{pct(h.instant, first.instant)}</span>
               </span>
             )}
+            {bucketMs > 5 * 60_000 && <span className="muted tiny">average over {bucketWords}</span>}
           </div>
         </>
       )}

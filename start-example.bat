@@ -27,6 +27,8 @@ set "API_TARGET=http://localhost:8790"
 set "PUBLIC_URL=http://localhost:5190"
 set "DEV_AUTH=1"
 set "BAZAAR_ENABLED=0"
+rem The example prices are made up; real SkyCofl prices would be mixed into them.
+set "COFL_BACKFILL=0"
 
 rem Open the browser once the server answers (not after a fixed wait).
 start "" /b powershell -NoProfile -Command "for($i=0;$i -lt 180;$i++){try{Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:8790/api/me' -TimeoutSec 3 | Out-Null; break}catch{ if($_.Exception.Response){break}; Start-Sleep 1 }}; Start-Process 'http://localhost:5190/signin'"

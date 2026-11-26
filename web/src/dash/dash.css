@@ -150,7 +150,12 @@ a.mrow:hover, .mrow:hover { background: rgba(255, 255, 255, 0.035); color: var(-
 .ftip { transform: translate(-50%, calc(-100% - 8px)); white-space: nowrap; }
 .tip .tip-row { display: flex; justify-content: space-between; gap: 14px; }
 .tip .tip-row > :last-child { font-variant-numeric: tabular-nums; }
-.chart-dot { pointer-events: none; }
+.chart-dot { position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 99px; pointer-events: none; }
+.price-ranges { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.price-ranges .seg button { min-height: 28px; padding: 0 11px; font-size: 13px; }
+.price-chart { touch-action: pan-y; }
+.price-chart svg { cursor: crosshair; }
+.price-empty { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
 .split { display: flex; height: 26px; border-radius: 999px; overflow: hidden; background: rgba(255, 255, 255, 0.05); }
 .split > span { display: block; height: 100%; }
 

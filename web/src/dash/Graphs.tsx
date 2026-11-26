@@ -10,7 +10,7 @@ import { ESSENCE, SOUL, groupLoot, lootOf, startOfUtcDay, sumSeries, type User }
 import { Card, Loading, ProLock, colourAt } from './ui.tsx';
 import type { Go } from './App.tsx';
 import { itemIcon } from '../item-icons.ts';
-import { CalendarCard, CalendarView, HeatmapCard, HeatmapView, PriceCard, PriceView, TtkCard, TtkView, exampleCalendar, exampleHeat, examplePrices, exampleTtk } from './MoreGraphs.tsx';
+import { CalendarCard, CalendarView, HeatmapCard, HeatmapView, PriceCard, PriceView, TtkCard, TtkView, exampleCalendar, exampleHeat, examplePrices, exampleTtk, priceWindow } from './MoreGraphs.tsx';
 
 interface Lines {
   from: number;
@@ -409,7 +409,7 @@ function Example() {
         </div>
       </div>
       <ProLock what="Soul String, Essence and Fragment prices over 30 days.">
-        <PriceView points={examplePrices()} item="SOUL_STRING" setItem={() => undefined} />
+        <PriceView points={examplePrices()} bucketMs={3_600_000} item="SOUL_STRING" setItem={() => undefined} view={priceWindow('1m')} setView={() => undefined} />
       </ProLock>
       <ProLock what="Your Soul String and Essence per kill against the wiki's numbers.">
         <RatesCard rows={rates} example />

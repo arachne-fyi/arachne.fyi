@@ -502,16 +502,30 @@ export function registerExtras(app: FastifyInstance, ctx: Context, requireUser: 
     if (!requireUser(req, reply)) return;
     const item = String((req.query as { item?: string }).item ?? '');
     if (!/^[A-Z0-9_]{1,64}$/.test(item)) return reply.code(400).send({ error: 'bad_item' });
-    return { item, points: priceHistory(item, sinceDays(req.query, 7)) };
+    // Either from/to (epoch ms, for the zoomable chart) or days (back from now).
+    const q = req.query as { from?: string; to?: string };
+    const now = Date.now();
+    const num = (v: string | undefined) => (v != null && v !== '' && Number.isFinite(Number(v)) ? Number(v) : null);
+    const to = Math.min(now, num(q.to) ?? now);
+    const from = Math.max(now - 3650 * DAY, num(q.from) ?? sinceDays(req.query, 7));
+    if (!(from < to)) return reply.code(400).send({ error: 'bad_range' });
+    const bucketMs = priceBucket(to - from);
+    return { item, from, to, bucketMs, points: priceHistory(item, from, to, bucketMs) };
   });
 
-  /** Hourly averages, so a month is ~720 points, not ~8,600 snapshots. */
-  const priceHistory = (item: string, from: number) =>
+  /** Averages over buckets sized so any range is at most ~500 points (5 minutes for a day, a week for 5 years). */
+  const PRICE_BUCKETS = [5, 15, 30, 60, 120, 360, 720, 1440, 4320, 10080].map((m) => m * 60_000);
+  const priceBucket = (span: number) => PRICE_BUCKETS.find((b) => span / b <= 500) ?? PRICE_BUCKETS[PRICE_BUCKETS.length - 1]!;
+  const priceHistory = (item: string, from: number, to: number, bucketMs: number) =>
     db.all<{ t: number; instant: number | null; offer: number | null }>(
-      `SELECT (ts / 3600000) * 3600000 AS t, AVG(instant) AS instant, AVG(offer) AS offer
-       FROM prices WHERE item = ? AND ts >= ? GROUP BY t ORDER BY t`,
+      // Bound numbers arrive as REAL, which would make this a float division and no bucketing at all.
+      `SELECT (ts / CAST(? AS INTEGER)) * CAST(? AS INTEGER) AS t, AVG(instant) AS instant, AVG(offer) AS offer
+       FROM prices WHERE item = ? AND ts >= ? AND ts <= ? GROUP BY t ORDER BY t`,
+      bucketMs,
+      bucketMs,
       item,
       from,
+      to,
     );
 
   /** Latest instant-sell price of every tracked item, and how it moved over 24 hours. */

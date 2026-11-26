@@ -13,7 +13,10 @@ import type { PriceLine, Prices } from './prices.ts';
  */
 
 const MIN = 60_000;
+const HOUR = 60 * MIN;
 const DAY = 86_400_000;
+/** Up to this many days back, SkyCofl serves 2-hourly points; older history is daily. */
+const RECENT_DAYS = 90;
 /** No own snapshot for this long counts as a gap (same rule as the Admin page's price gaps). */
 export const GAP_MS = 30 * MIN;
 
@@ -49,17 +52,29 @@ export function parseCoflHistory(body: unknown): CoflPoint[] {
   return out.sort((a, b) => a.ts - b.ts);
 }
 
-/** The stretches inside [from, to] where `times` (sorted) leave more than `gap` uncovered. */
-export function gapsIn(times: readonly number[], from: number, to: number, gap = GAP_MS): { from: number; to: number }[] {
+/**
+ * How far apart snapshots may be before it counts as a gap, by age. SkyCofl's own history gets
+ * coarser with age (5-minute points for the last day, 2-hourly for weeks, daily for years), so
+ * asking for finer than that would find "gaps" in every old stretch on every run.
+ */
+export function gapLimit(age: number): number {
+  if (age <= DAY) return GAP_MS;
+  if (age <= RECENT_DAYS * DAY) return 3 * HOUR;
+  return 2 * DAY;
+}
+
+/** The stretches inside [from, to] where `times` (sorted) leave more than gapLimit uncovered. */
+export function gapsIn(times: readonly number[], from: number, to: number, now = to, limit: (age: number) => number = () => GAP_MS): { from: number; to: number }[] {
   const out: { from: number; to: number }[] = [];
   let prev = from;
   for (const t of times) {
     if (t < from) continue;
     if (t > to) break;
-    if (t - prev > gap) out.push({ from: prev, to: t });
+    // Judged by the older end: a stretch reaching back into daily history only needs daily points.
+    if (t - prev > limit(now - prev)) out.push({ from: prev, to: t });
     prev = t;
   }
-  if (to - prev > gap) out.push({ from: prev, to });
+  if (to - prev > limit(now - prev)) out.push({ from: prev, to });
   return out;
 }
 
@@ -70,8 +85,6 @@ export interface BackfillOptions {
   baseUrl: string;
   /** Items to fill. Defaults to every Bazaar item the server tracks. */
   items?: readonly string[];
-  /** Size of one history request. */
-  chunkDays?: number;
   /** Pause between requests, to stay well inside SkyCofl's rate limit. */
   pauseMs?: number;
   log?: (msg: string) => void;
@@ -88,13 +101,33 @@ export interface BackfillReport {
 }
 
 /**
+ * The requests that cover [start, end], newest last. SkyCofl's range request answers with
+ * 2-hourly points for a week and daily points for a year, and its "day" window with 5-minute
+ * points, so: years in yearly requests, the last few months in weekly ones, the last day at once.
+ */
+function plan(start: number, end: number, now: number): { from: number; to: number; path: (tag: string) => string }[] {
+  const out: { from: number; to: number; path: (tag: string) => string }[] = [];
+  const range = (a: number, b: number, size: number) => {
+    for (let from = a; from < b; from += size) {
+      const to = Math.min(b, from + size);
+      out.push({ from, to, path: (tag) => `/api/bazaar/${tag}/history?start=${iso(from)}&end=${iso(to)}` });
+    }
+  };
+  const recent = now - RECENT_DAYS * DAY;
+  const lastDay = now - DAY;
+  if (start < recent) range(start, Math.min(end, recent), 365 * DAY);
+  if (end > recent && start < lastDay) range(Math.max(start, recent), Math.min(end, lastDay), 7 * DAY);
+  if (end > lastDay) out.push({ from: Math.max(start, lastDay), to: end, path: (tag) => `/api/bazaar/${tag}/history/day` });
+  return out;
+}
+
+/**
  * Fill the price history for every tracked item from SkyCofl. Only time ranges that actually
  * have a gap in our own snapshots are requested, so a second run is cheap.
  */
 export async function backfillFromCofl(prices: Prices, opts: BackfillOptions): Promise<BackfillReport> {
   const now = opts.now ?? Date.now();
   const items = opts.items ?? PRICE_WATCHLIST;
-  const chunk = (opts.chunkDays ?? 7) * DAY;
   const pause = opts.pauseMs ?? 1_200;
   const get = opts.fetch ?? fetch;
   const base = opts.baseUrl.replace(/\/+$/, '');
@@ -102,9 +135,8 @@ export async function backfillFromCofl(prices: Prices, opts: BackfillOptions): P
   const end = now - GAP_MS;
   const start = now - opts.days * DAY;
   const report: BackfillReport = { requests: 0, added: {}, failed: [] };
-  let rangeWorks = true;
 
-  const request = async (path: string): Promise<CoflPoint[] | 'missing'> => {
+  const request = async (path: string, tries = 0): Promise<CoflPoint[] | 'missing'> => {
     if (report.requests > 0) await sleep(pause, opts.signal);
     report.requests++;
     const res = await get(`${base}${path}`, {
@@ -112,10 +144,10 @@ export async function backfillFromCofl(prices: Prices, opts: BackfillOptions): P
       signal: opts.signal ? AbortSignal.any([opts.signal, AbortSignal.timeout(30_000)]) : AbortSignal.timeout(30_000),
     });
     if (res.status === 404) return 'missing';
-    if (res.status === 429) {
+    if (res.status === 429 && tries < 3) {
       const wait = Number(res.headers.get('retry-after')) * 1000;
       await sleep(Number.isFinite(wait) && wait > 0 ? Math.min(wait, 120_000) : 30_000, opts.signal);
-      return request(path);
+      return request(path, tries + 1);
     }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return parseCoflHistory(await res.json());
@@ -125,39 +157,20 @@ export async function backfillFromCofl(prices: Prices, opts: BackfillOptions): P
     if (opts.signal?.aborted) break;
     const tag = encodeURIComponent(item);
     try {
-      const gaps = gapsIn(prices.times(item, start, end), start, end);
+      const gaps = gapsIn(prices.times(item, start, end), start, end, now, gapLimit);
       if (gaps.length === 0) continue;
       const points: CoflPoint[] = [];
       let missing = false;
-      // Walk the window in chunks, asking only for chunks that contain a gap.
-      for (let from = start; from < end && !missing; from += chunk) {
-        const to = Math.min(end, from + chunk);
-        if (!gaps.some((g) => g.from < to && g.to > from)) continue;
-        if (rangeWorks) {
-          try {
-            const got = await request(`/api/bazaar/${tag}/history?start=${iso(from)}&end=${iso(to)}`);
-            if (got === 'missing') missing = true;
-            else points.push(...got);
-            continue;
-          } catch (err) {
-            // Some SkyCofl versions only serve the fixed windows; fall back to those below.
-            opts.log?.(`SkyCofl range request failed (${(err as Error).message}), using the day and week windows instead`);
-            rangeWorks = false;
-          }
+      for (const step of plan(start, end, now)) {
+        if (!gaps.some((g) => g.from < step.to && g.to > step.from)) continue;
+        const got = await request(step.path(tag));
+        if (got === 'missing') {
+          missing = true; // not a Bazaar item on SkyCofl
+          break;
         }
-        break;
+        points.push(...got.filter((p) => p.ts >= step.from && p.ts <= step.to));
       }
-      if (!rangeWorks && !missing) {
-        for (const w of ['week', 'day'] as const) {
-          const got = await request(`/api/bazaar/${tag}/history/${w}`);
-          if (got === 'missing') {
-            missing = true;
-            break;
-          }
-          points.push(...got);
-        }
-      }
-      if (missing) continue; // not a Bazaar item on SkyCofl
+      if (missing) continue;
       const added = prices.recordBackfill(item, inGaps(points, gaps));
       if (added > 0) report.added[item] = added;
     } catch (err) {
