@@ -366,6 +366,12 @@ export const api = {
   damage: (scope: 'group' | 'me', days: number) => request<{ values: number[] }>('GET', `/api/damage?scope=${scope}&days=${days}`),
   priceHistory: (item: string, days: number) =>
     request<{ item: string; points: { t: number; instant: number | null; offer: number | null }[] }>('GET', `/api/prices/history?item=${item}&days=${days}`),
+  /** Prices between two times, averaged into buckets the server picks (bucketMs) so any range is a few hundred points. */
+  priceRange: (item: string, from: number, to: number) =>
+    request<{ item: string; from: number; to: number; bucketMs: number; points: { t: number; instant: number | null; offer: number | null }[] }>(
+      'GET',
+      `/api/prices/history?item=${item}&from=${from}&to=${to}`,
+    ),
   movers: () => request<{ items: MarketRow[] }>('GET', '/api/prices/movers'),
   progress: (scope: 'group' | 'me') => request<Progress>('GET', `/api/progress?scope=${scope}`),
   feed: () =>
