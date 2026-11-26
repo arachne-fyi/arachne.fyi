@@ -1,5 +1,5 @@
 /* Building blocks for the new dashboard. Styles are in dash.css (on top of landing.css and site.css). */
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { headUrl } from '../offline.ts';
 
 /** Pick one of a few, e.g. Today / 7 days / All time. */
@@ -213,6 +213,35 @@ export function ProLock({ children, what }: { children: ReactNode; what: string 
           </a>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** A hover box for bar and cell charts, styled like .tip and placed above the bar or cell under the
+    pointer. Put the class "tip-host" on the chart's wrapper, spread on(value) onto each bar or cell,
+    call hide on the wrapper's pointer leave and render <FloatTip at={tip}> inside the wrapper. */
+export function useHoverTip<T>() {
+  const [tip, setTip] = useState<{ x: number; y: number; v: T } | null>(null);
+  return {
+    tip,
+    hide: () => setTip(null),
+    on: (v: T) => ({
+      onPointerEnter: (e: ReactPointerEvent<Element>) => {
+        const host = e.currentTarget.closest('.tip-host');
+        if (!host) return;
+        const b = host.getBoundingClientRect();
+        const r = e.currentTarget.getBoundingClientRect();
+        setTip({ x: r.left + r.width / 2 - b.left, y: r.top - b.top, v });
+      },
+    }),
+  };
+}
+
+export function FloatTip({ at, children }: { at: { x: number; y: number } | null; children?: ReactNode }) {
+  if (!at) return null;
+  return (
+    <div className="tip ftip" style={{ left: `clamp(100px, ${at.x}px, calc(100% - 100px))`, top: at.y }}>
+      {children}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { useLive, useNow } from '../hooks.ts';
 import { useIsPro } from '../components/Locked.tsx';
 import { platform, type Group } from '../platform-api.ts';
 import { ESSENCE, EMPTY, SOUL, WINDOWS, WIN_WORDS, accountState, accountsOf, groupLoot, killsOf, lootOf, liveFights, meId, sumSeries, tierWord, timer, useLiveBosses, type User, type Win } from './data.ts';
-import { Avatar, Card, CopyButton, Loading, Seg, colourAt } from './ui.tsx';
+import { Avatar, Card, CopyButton, FloatTip, Loading, Seg, colourAt, useHoverTip } from './ui.tsx';
 import { linkTo, type Go } from './App.tsx';
 import { itemIcon } from '../item-icons.ts';
 
@@ -199,6 +199,10 @@ function HourChart({ series, uuids, go }: { series: Awaited<ReturnType<typeof ap
   const pro = useIsPro();
   const vals = sumSeries(series, uuids);
   const max = Math.max(1, ...vals);
+  const total = vals.reduce((n, v) => n + v, 0);
+  const avg = vals.length > 0 ? total / vals.length : 0;
+  const { tip, on, hide } = useHoverTip<number>();
+  const t = tip ? vals[tip.v] ?? 0 : 0;
   return (
     <Card
       title={<span className="dh2">Profit, last 24 hours</span>}
@@ -214,15 +218,28 @@ function HourChart({ series, uuids, go }: { series: Awaited<ReturnType<typeof ap
         <Loading />
       ) : (
         <>
-          <div className="hours" role="img" aria-label={`Group profit per ${Math.round(series.bucketMs / 60_000)} minutes over the last 24 hours`}>
-            {vals.map((v, i) => (
-              <span
-                key={i}
-                className={i === vals.length - 1 ? 'now' : undefined}
-                style={{ height: `${Math.max(1, (Math.max(0, v) / max) * 100)}%` }}
-                title={`${shortClock(series.from + i * series.bucketMs)}: ${coins(v)}`}
-              />
-            ))}
+          <div className="tip-host" onPointerLeave={hide}>
+            <div className="hours" role="img" aria-label={`Group profit per ${Math.round(series.bucketMs / 60_000)} minutes over the last 24 hours`}>
+              {vals.map((v, i) => (
+                <span key={i} className={i === vals.length - 1 ? 'now' : undefined} style={{ height: `${Math.max(1, (Math.max(0, v) / max) * 100)}%` }} {...on(i)} />
+              ))}
+            </div>
+            {tip && (
+              <FloatTip at={tip}>
+                <span className="px">
+                  {shortClock(series.from + tip.v * series.bucketMs)} – {tip.v === vals.length - 1 ? 'now' : shortClock(series.from + (tip.v + 1) * series.bucketMs)}
+                </span>
+                <span>
+                  <b>{coins(t)}</b> profit
+                </span>
+                {total > 0 && <span className="muted">{Math.round((Math.max(0, t) / total) * 100)}% of the last 24 hours</span>}
+                {avg > 0 && (
+                  <span className={Math.abs(t / avg - 1) < 0.05 ? 'muted' : t > avg ? 'gain' : 'loss'}>
+                    {Math.abs(t / avg - 1) < 0.05 ? 'about average' : `${t > avg ? '+' : '−'}${Math.round(Math.abs(t / avg - 1) * 100)}% vs average`}
+                  </span>
+                )}
+              </FloatTip>
+            )}
           </div>
           <div className="axis">
             <span>{shortClock(series.from)}</span>
