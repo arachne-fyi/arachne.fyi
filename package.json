@@ -13,6 +13,7 @@
     "typecheck": "npm run typecheck -w shared && npm run typecheck -w server && npm run typecheck -w web",
     "schema": "npm run schema -w shared",
     "simulate": "npm run simulate -w server --",
+    "seed-year": "npm run seed-year -w server --",
     "rebuild-index": "npm run rebuild-index -w server"
   },
   "devDependencies": {

@@ -118,11 +118,19 @@ export class Progress {
   collection(ids: readonly string[]) {
     const got = new Map<string, { count: number; first: number }>();
     if (ids.length > 0) {
-      for (const r of this.db.all<{ item: string; c: number; first: number }>(
-        `SELECT item, SUM(count) AS c, MIN(ts) AS first FROM events WHERE kind = 'LOOT' AND account IN (${ph(ids.length)}) GROUP BY item`,
+      // Counts from the hourly totals (a few rows per hour instead of every drop), then the
+      // first drop of each item found with one index seek per item (events_loot_item).
+      for (const r of this.db.all<{ item: string; c: number }>(
+        `SELECT item, SUM(count) AS c FROM hourly WHERE kind = 'LOOT' AND account IN (${ph(ids.length)}) GROUP BY item`,
         ...ids,
       )) {
-        got.set(r.item, { count: r.c, first: r.first });
+        if (!(r.c > 0)) continue;
+        const first = this.db.get<{ t: number | null }>(
+          `SELECT MIN(ts) AS t FROM events WHERE kind = 'LOOT' AND item = ? AND account IN (${ph(ids.length)})`,
+          r.item,
+          ...ids,
+        )?.t;
+        got.set(r.item, { count: r.c, first: first ?? 0 });
       }
     }
     return Object.keys(ITEMS).map((item) => ({

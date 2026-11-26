@@ -8,8 +8,6 @@
  */
 import './landing.css';
 import './site.css';
-import './mc-theme.css';
-import { mountPanorama } from './mc-bg.ts';
 import { enhanceSelects } from './dropdown.ts';
 import { offlineBanner } from './offline.ts';
 
@@ -39,7 +37,6 @@ toggle?.addEventListener('click', () => {
   bar?.classList.toggle('menu-open', open);
 });
 
-mountPanorama();
 enhanceSelects();
 offlineBanner();
 

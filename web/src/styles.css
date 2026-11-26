@@ -6,16 +6,11 @@
  * So every font size below is 16, 32 or 48 pixels, nothing in between.
  */
 
+/* 26 Nov 2026: the pixel font is gone from the site; the stream overlay uses Inter too. */
 @font-face {
-  font-family: 'Arachne Pixel';
-  src: url('/fonts/arachne-regular.woff2') format('woff2');
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Arachne Pixel';
-  src: url('/fonts/arachne-bold.woff2') format('woff2');
-  font-weight: 700;
+  font-family: 'Inter';
+  src: url('/fonts/inter/inter-latin-wght-normal.woff2') format('woff2');
+  font-weight: 100 900;
   font-display: swap;
 }
 
@@ -35,7 +30,7 @@
   --red: #ff5a4f;
   --green: #7bd88f;
 
-  --pixel: 'Arachne Pixel', ui-monospace, Consolas, monospace;
+  --pixel: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --small: 16px;
   --big: 32px;
   --huge: 48px;

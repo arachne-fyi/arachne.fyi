@@ -61,52 +61,56 @@ export function Home({ group, user, go }: { group: Group; user: User; go: Go }) 
       </section>
 
       <section className="tiles" aria-label="What the group farmed">
-        <Res ico="$" cls="ico-coins" label="Scavenger coins" value={coins(t.coins)} sub={gross > 0 ? `${Math.round((t.coins / gross) * 100)}% of everything farmed` : 'none yet'} />
-        <Res ico="S" cls="ico-string" label="Soul String" value={loot.data ? int(soul.count) : '…'} sub={soul.value > 0 ? `worth ${coins(soul.value)}` : 'none yet'} />
-        <Res ico="E" cls="ico-essence" label="Spider Essence" value={loot.data ? int(ess.count) : '…'} sub={ess.value > 0 ? `worth ${coins(ess.value)}` : 'none yet'} />
-        <Res ico="K" cls="ico-kills" label="Kills" value={int(t.kills)} sub={`${int(t.crystals)} crystals · ${int(t.callings)} callings`} />
+        <Res ico="coin" cls="ico-coins" label="Scavenger coins" value={coins(t.coins)} sub={gross > 0 ? `${Math.round((t.coins / gross) * 100)}% of everything farmed` : 'none yet'} />
+        <Res ico="string" cls="ico-string" label="Soul String" value={loot.data ? int(soul.count) : '…'} sub={soul.value > 0 ? `worth ${coins(soul.value)}` : 'none yet'} />
+        <Res ico="essence" cls="ico-essence" label="Spider Essence" value={loot.data ? int(ess.count) : '…'} sub={ess.value > 0 ? `worth ${coins(ess.value)}` : 'none yet'} />
+        <Res ico="kill" cls="ico-kills" label="Kills" value={int(t.kills)} sub={`${int(t.crystals)} crystals · ${int(t.callings)} callings`} />
       </section>
 
       <div className="cols">
-        <Card className="col-main" title={<span className="dh2">Who's carrying</span>} side="share of group profit">
-          <div>
-            {ranked.map(({ m, t: mt }, i) => {
-              const mine = m.userId === me;
-              const body = (
-                <>
-                  <span className="px muted">{i + 1}</span>
-                  <Avatar name={m.name} colour={colourAt(i)} />
-                  <span className="mrow-words">
-                    <span className="mrow-name">
-                      <span className="px">{m.name}</span>
-                      {m.role !== 'member' && <span className="muted tiny">{m.role}</span>}
-                      {farmingUsers.has(m.userId) && <span className="live-tag">farming</span>}
+        <div className="col-main stack" style={{ gap: 20 }}>
+          <Card title={<span className="dh2">Who's carrying</span>} side="share of group profit">
+            <div>
+              {ranked.map(({ m, t: mt }, i) => {
+                const mine = m.userId === me;
+                const body = (
+                  <>
+                    <span className="px muted">{i + 1}</span>
+                    <Avatar name={m.name} colour={colourAt(i)} />
+                    <span className="mrow-words">
+                      <span className="mrow-name">
+                        <span className="px">{m.name}</span>
+                        {m.role !== 'member' && <span className="muted tiny">{m.role}</span>}
+                        {farmingUsers.has(m.userId) && <span className="live-tag">farming</span>}
+                      </span>
+                      <span className="bar">
+                        <span style={{ width: `${Math.max(0, Math.round((mt.profit / top) * 100))}%`, background: colourAt(i) }} />
+                      </span>
                     </span>
-                    <span className="bar">
-                      <span style={{ width: `${Math.max(0, Math.round((mt.profit / top) * 100))}%`, background: i === 0 ? 'var(--orange)' : '#8f8f98' }} />
-                    </span>
-                  </span>
-                  <span className="px right">{coins(mt.profit)}</span>
-                  <span className="muted tiny right mrow-rate">{mt.wallUptimeMs > 0 ? `${coins(mt.profitPerWallHour)} / h` : '-'}</span>
-                </>
-              );
-              return mine ? (
-                <a key={m.userId} href="/me" className="mrow" onClick={linkTo(go, '/me')}>
-                  {body}
-                </a>
-              ) : (
-                <div key={m.userId} className="mrow">
-                  {body}
-                </div>
-              );
-            })}
-            {members.some((m) => m.hidden) && (
-              <p className="muted tiny" style={{ padding: '8px' }}>
-                {members.filter((m) => m.hidden).length} member{members.filter((m) => m.hidden).length === 1 ? ' keeps their' : 's keep their'} numbers private, so they're left out of the totals.
-              </p>
-            )}
-          </div>
-        </Card>
+                    <span className="px right">{coins(mt.profit)}</span>
+                    <span className="muted tiny right mrow-rate">{mt.wallUptimeMs > 0 ? `${coins(mt.profitPerWallHour)} / h` : '-'}</span>
+                  </>
+                );
+                return mine ? (
+                  <a key={m.userId} href="/me" className="mrow" onClick={linkTo(go, '/me')}>
+                    {body}
+                  </a>
+                ) : (
+                  <div key={m.userId} className="mrow">
+                    {body}
+                  </div>
+                );
+              })}
+              {members.some((m) => m.hidden) && (
+                <p className="muted tiny" style={{ padding: '8px' }}>
+                  {members.filter((m) => m.hidden).length} member{members.filter((m) => m.hidden).length === 1 ? ' keeps their' : 's keep their'} numbers private, so they're left out of the totals.
+                </p>
+              )}
+            </div>
+          </Card>
+
+          <HourChart series={series.data} uuids={uuids} go={go} />
+        </div>
 
         <aside className="col-side">
           <Card title="Farming now">
@@ -164,17 +168,16 @@ export function Home({ group, user, go }: { group: Group; user: User; go: Go }) 
           </Card>
         </aside>
       </div>
-
-      <HourChart series={series.data} uuids={uuids} go={go} />
     </main>
   );
 }
 
-function Res({ ico, cls, label, value, sub }: { ico: string; cls: string; label: string; value: string; sub: string }) {
+/** One total with its item picture (public/icons/<ico>.svg). */
+function Res({ ico, cls, label, value, sub }: { ico: 'coin' | 'string' | 'essence' | 'kill'; cls: string; label: string; value: string; sub: string }) {
   return (
     <div className="panel res">
       <span className={`ico ${cls}`} aria-hidden="true">
-        {ico}
+        <img src={`/icons/${ico}.svg`} alt="" width={32} height={32} />
       </span>
       <span className="res-words">
         <span className="muted small">{label}</span>

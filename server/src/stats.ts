@@ -82,7 +82,20 @@ export class Stats {
 
   constructor(private readonly db: Db) {}
 
+  /** Goes up whenever new data is indexed, so other caches can tell they are out of date. */
+  version = 0;
+
+  /** Goes up when stored data is thrown away or replaced (rebuild, purge): long-lived caches start over. */
+  cleared = 0;
+
+  /** After a rebuild or purge: everything indexed before may be gone. */
+  dataReplaced(): void {
+    this.cleared++;
+    this.invalidate();
+  }
+
   invalidate(): void {
+    this.version++;
     this.cache.clear();
     this.focusCache.clear();
   }

@@ -178,7 +178,7 @@ export function Loading({ error }: { error?: string | null }) {
   return <p className="empty">Loading…</p>;
 }
 
-const COLOURS = ['#ff8a1f', '#f5ecdb', '#ffd27a', '#9c8f7c', '#d9b48a', '#ff7a3d', '#6b6052', '#ffe9bf'];
+const COLOURS = ['#ff8a1f', '#3ddc84', '#6aa8ff', '#c08cff', '#facc15', '#f472b6', '#2dd4bf', '#f87171'];
 export const colourAt = (i: number) => COLOURS[i % COLOURS.length]!;
 
 /** Discord picture, or a coloured square with the first letter. */

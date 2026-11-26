@@ -8,6 +8,8 @@ const FOREVER = Number.MAX_SAFE_INTEGER;
 const SESSION_GAP_MS = 30 * 60_000;
 /** Gaps between a death and the next spawn longer than this are breaks, not downtime. */
 const DOWNTIME_MAX_MS = 10 * 60_000;
+/** How long a dry-streak answer is reused (see Insights.dryStreaks). */
+const DRY_CACHE_MS = 15_000;
 
 /** The drops people wait for. "Dry streak" = kills since the last one. */
 export const RARE_DROPS = ['DARK_QUEENS_SOUL_DROP', 'ARACHNE_FANG', 'TARANTULA_EPIC', 'TARANTULA_LEGENDARY'] as const;
@@ -43,7 +45,22 @@ export class Insights {
    * For each rare drop: kills since it last dropped, the longest run of kills without it,
    * and how many have dropped in total.
    */
-  dryStreaks(ids: readonly string[]) {
+  private dryCache = new Map<string, { at: number; version: number; value: ReturnType<Insights['readDryStreaks']> }>();
+
+  /**
+   * Dry streaks walk every kill ever made, so the answer is kept for DRY_CACHE_MS, or until
+   * new data is indexed: the Overview, badges and titles all ask for it on the same page load.
+   */
+  dryStreaks(ids: readonly string[], now = Date.now()) {
+    const key = [...ids].sort().join(',');
+    const hit = this.dryCache.get(key);
+    if (hit && hit.version === this.stats.version && now - hit.at >= 0 && now - hit.at < DRY_CACHE_MS) return hit.value;
+    const value = this.readDryStreaks(ids);
+    this.dryCache.set(key, { at: now, version: this.stats.version, value });
+    return value;
+  }
+
+  private readDryStreaks(ids: readonly string[]) {
     const kills = this.killTimes(ids);
     return RARE_DROPS.map((item) => {
       const drops =
@@ -242,6 +259,10 @@ export class Insights {
 }
 
 const WEEK_HOURS = 7 * 24;
+/** Fights older than this are settled: their drop-rate totals are cached (Views.tierDrops). */
+const DROPS_SETTLE_MS = 15 * 60_000;
+/** The drop-rate cache is thrown away and rebuilt this often. */
+const DROPS_REBUILD_MS = 6 * 60 * 60_000;
 
 /** Extra read-only views for the Graphs and Drops pages. */
 export class Views {
@@ -251,32 +272,90 @@ export class Views {
   ) {}
 
   /**
+   * Drop-rate totals per account and summon tier, cached. Fights that started more than
+   * DROPS_SETTLE_MS ago are added to the cache once; only the newer ones are read again on
+   * each request. The cache is rebuilt from scratch every DROPS_REBUILD_MS, so an event that
+   * arrives very late (an offline queue flushed days later) shows up within that time.
+   */
+  private dropCache = new Map<string, { builtAt: number; cleared: number; upTo: number; kills: number; items: Map<string, { fights: number; total: number }> }>();
+
+  private tierDrops(account: string, tier: 'CALLING' | 'CRYSTAL', now: number) {
+    const read = (from: number, to: number) => {
+      const kills =
+        this.db.get<{ n: number }>(
+          `SELECT COUNT(*) AS n FROM fights WHERE account = ? AND tier = ? AND anchor_ts > ? AND anchor_ts <= ? AND ${KILL}`,
+          account,
+          tier,
+          from,
+          to,
+        )?.n ?? 0;
+      // A drop counts once per fight it appeared in, whatever the stack size. Driven from the
+      // fights (index fights_account_anchor), each fight's loot found with events_account_fight.
+      const items = new Map<string, { fights: number; total: number }>();
+      for (const r of this.db.all<{ item: string; fights: number; total: number }>(
+        `SELECT e.item AS item, COUNT(DISTINCT e.fight) AS fights, SUM(e.count) AS total
+         FROM fights f JOIN events e ON e.account = f.account AND e.fight = f.fight AND e.kind = 'LOOT'
+         WHERE f.account = ? AND f.tier = ? AND f.anchor_ts > ? AND f.anchor_ts <= ?
+         GROUP BY e.item`,
+        account,
+        tier,
+        from,
+        to,
+      )) {
+        items.set(r.item, { fights: r.fights, total: r.total });
+      }
+      return { kills, items };
+    };
+    const key = `${account}|${tier}`;
+    const settled = now - DROPS_SETTLE_MS;
+    let c = this.dropCache.get(key);
+    if (!c || c.cleared !== this.stats.cleared || now - c.builtAt > DROPS_REBUILD_MS || settled < c.upTo) {
+      c = { builtAt: now, cleared: this.stats.cleared, upTo: -1, kills: 0, items: new Map() };
+      this.dropCache.set(key, c);
+    }
+    if (settled > c.upTo) {
+      const add = read(c.upTo, settled);
+      c.kills += add.kills;
+      for (const [item, r] of add.items) {
+        const sum = c.items.get(item) ?? { fights: 0, total: 0 };
+        sum.fights += r.fights;
+        sum.total += r.total;
+        c.items.set(item, sum);
+      }
+      c.upTo = settled;
+    }
+    const recent = read(c.upTo, FOREVER);
+    const items = new Map([...c.items].map(([item, r]) => [item, { ...r }]));
+    for (const [item, r] of recent.items) {
+      const sum = items.get(item) ?? { fights: 0, total: 0 };
+      sum.fights += r.fights;
+      sum.total += r.total;
+      items.set(item, sum);
+    }
+    return { kills: c.kills + recent.kills, items };
+  }
+
+  /**
    * How often each item drops per kill, split by summon (callings = Lv300, crystal = Lv500),
    * next to the wiki's base chance where it gives one. "Luck" is observed / expected
    * across the items that have a wiki figure.
    */
-  dropRates(ids: readonly string[]) {
+  dropRates(ids: readonly string[], now = Date.now()) {
     const out = (['CALLING', 'CRYSTAL'] as const).map((tier) => {
-      const kills =
-        ids.length === 0
-          ? 0
-          : (this.db.get<{ n: number }>(
-              `SELECT COUNT(*) AS n FROM fights WHERE tier = ? AND account IN (${placeholders(ids.length)}) AND ${KILL}`,
-              tier,
-              ...ids,
-            )?.n ?? 0);
-      // A drop counts once per fight it appeared in, whatever the stack size.
-      const rows =
-        ids.length === 0
-          ? []
-          : this.db.all<{ item: string; fights: number; total: number }>(
-              `SELECT e.item AS item, COUNT(DISTINCT e.account || ':' || e.fight) AS fights, SUM(e.count) AS total
-               FROM events e JOIN fights f ON f.account = e.account AND f.fight = e.fight
-               WHERE e.kind = 'LOOT' AND f.tier = ? AND e.account IN (${placeholders(ids.length)})
-               GROUP BY e.item`,
-              tier,
-              ...ids,
-            );
+      // Added up per account (see tierDrops), so a year of fights is read once, not per request.
+      let kills = 0;
+      const byItem = new Map<string, { fights: number; total: number }>();
+      for (const account of ids) {
+        const t = this.tierDrops(account, tier, now);
+        kills += t.kills;
+        for (const [item, r] of t.items) {
+          const sum = byItem.get(item) ?? { fights: 0, total: 0 };
+          sum.fights += r.fights;
+          sum.total += r.total;
+          byItem.set(item, sum);
+        }
+      }
+      const rows = [...byItem].map(([item, r]) => ({ item, ...r }));
       const expected = WIKI_DROP_CHANCE[tier] as Record<string, number | undefined>;
       const amounts = WIKI_DROP_AMOUNT[tier] as Record<string, { min: number; max: number } | undefined>;
       const items = rows.map((r) => ({
