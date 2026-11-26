@@ -1,11 +1,16 @@
 import { existsSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 
 // Load .env from the repo root or the server folder, whichever exists. Real environment
 // variables win, so Docker's `environment:` block always overrides the file.
 // Data lives next to whichever .env was used (the repo root in development), so the server,
 // the rebuild script and the mod's publishToServer task all agree on one ./data folder.
-let baseDir = process.cwd();
+// With no .env at all, still use the repo root when run from the server workspace (npm -w server),
+// so start.bat, start-example.bat and the scripts agree on ./data and ./data-example.
+let baseDir =
+  basename(process.cwd()) === 'server' && existsSync(resolve(process.cwd(), '../package.json')) && existsSync(resolve(process.cwd(), '../shared'))
+    ? resolve(process.cwd(), '..')
+    : process.cwd();
 for (const file of [resolve(process.cwd(), '.env'), resolve(process.cwd(), '../.env')]) {
   if (existsSync(file)) {
     baseDir = dirname(file);
