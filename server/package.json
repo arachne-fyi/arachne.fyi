@@ -11,6 +11,7 @@
     "test": "tsx --disable-warning=ExperimentalWarning --test test/*.test.ts",
     "simulate": "tsx scripts/simulate.ts",
     "seed-year": "tsx --disable-warning=ExperimentalWarning scripts/seed-year.ts",
+    "backfill-prices": "tsx --disable-warning=ExperimentalWarning scripts/backfill-prices.ts",
     "rebuild-index": "tsx --disable-warning=ExperimentalWarning src/store/rebuild-cli.ts",
     "rebuild-index:prod": "node --disable-warning=ExperimentalWarning dist/store/rebuild-cli.js",
     "purge": "tsx --disable-warning=ExperimentalWarning src/store/purge-cli.ts"

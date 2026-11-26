@@ -47,6 +47,8 @@ export interface Config {
   devAuth: boolean;
   sessionDays: number;
   bazaar: { enabled: boolean; pollMs: number; url: string };
+  /** Fill gaps in the Bazaar history from SkyCofl (see cofl.ts). */
+  cofl: { enabled: boolean; days: number; url: string; everyMs: number };
   /** Discord channel webhook for rare-drop posts. Empty turns the feature off. */
   discordWebhookUrl: string;
   /** Drops worth at least this many coins are posted (the rare drops are always posted). */
@@ -81,6 +83,12 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
       enabled: env.BAZAAR_ENABLED === undefined ? true : flag(env.BAZAAR_ENABLED),
       pollMs: int(env.BAZAAR_POLL_MS, 5 * 60_000),
       url: env.BAZAAR_URL ?? 'https://api.hypixel.net/v2/skyblock/bazaar',
+    },
+    cofl: {
+      enabled: env.COFL_BACKFILL === undefined ? true : flag(env.COFL_BACKFILL),
+      days: int(env.COFL_BACKFILL_DAYS, 90),
+      url: env.COFL_URL ?? 'https://sky.coflnet.com',
+      everyMs: int(env.COFL_BACKFILL_EVERY_MS, 6 * 3_600_000),
     },
     discordWebhookUrl: env.DISCORD_WEBHOOK_URL ?? '',
     rareDropMinCoins: int(env.RARE_DROP_MIN_COINS, 1_000_000),
