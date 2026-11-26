@@ -11,6 +11,8 @@ const listeners = new Set<Listener>();
 let source: EventSource | null = null;
 let connected = false;
 const statusListeners = new Set<(up: boolean) => void>();
+/** Told when a boss spawns or dies (the mod's instant packets), so fight timers start on time. */
+const bossListeners = new Set<Listener>();
 
 function ensureStream() {
   if (source) return;
@@ -19,6 +21,7 @@ function ensureStream() {
   source.addEventListener('ingest', poke);
   source.addEventListener('prices', poke);
   source.addEventListener('settings', poke);
+  source.addEventListener('boss', () => bossListeners.forEach((fn) => fn()));
   source.onopen = () => {
     connected = true;
     statusListeners.forEach((fn) => fn(true));
@@ -29,6 +32,13 @@ function ensureStream() {
     statusListeners.forEach((fn) => fn(false));
     // EventSource reconnects on its own.
   };
+}
+
+/** Call `fn` whenever a boss spawns or dies. Returns the unsubscribe function. */
+export function onBoss(fn: Listener): () => void {
+  ensureStream();
+  bossListeners.add(fn);
+  return () => void bossListeners.delete(fn);
 }
 
 export function closeStream() {

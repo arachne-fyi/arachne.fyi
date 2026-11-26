@@ -5,9 +5,10 @@ import { ago, coins, int, shortClock } from '../format.ts';
 import { useLive, useNow } from '../hooks.ts';
 import { useIsPro } from '../components/Locked.tsx';
 import { platform, type Group } from '../platform-api.ts';
-import { ESSENCE, EMPTY, SOUL, WINDOWS, WIN_WORDS, accountState, accountsOf, groupLoot, killsOf, lootOf, meId, openFights, sumSeries, tierWord, timer, type User, type Win } from './data.ts';
+import { ESSENCE, EMPTY, SOUL, WINDOWS, WIN_WORDS, accountState, accountsOf, groupLoot, killsOf, lootOf, liveFights, meId, sumSeries, tierWord, timer, useLiveBosses, type User, type Win } from './data.ts';
 import { Avatar, Card, CopyButton, Loading, Seg, colourAt } from './ui.tsx';
 import { linkTo, type Go } from './App.tsx';
+import { itemIcon } from '../item-icons.ts';
 
 export function Home({ group, user, go }: { group: Group; user: User; go: Go }) {
   const [win, setWin] = useState<Win>('today');
@@ -19,6 +20,7 @@ export function Home({ group, user, go }: { group: Group; user: User; go: Go }) 
   const fights = useLive(() => api.fights(120), [], 30_000);
   const series = useLive(() => api.series('24h'), [], 60_000);
   const loot = useLive(() => groupLoot(win, group.id), [win, group.id]);
+  const bosses = useLiveBosses();
 
   if (!g.data) return <main className="dpage"><Loading error={g.error} /></main>;
   const members = g.data.members;
@@ -26,7 +28,7 @@ export function Home({ group, user, go }: { group: Group; user: User; go: Go }) 
   const accounts = accountsOf(ov.data?.accounts, visible);
   const uuids = new Set(accounts.map((a) => a.uuid));
   const events = (ev.data?.events ?? []).filter((e) => uuids.has(e.account));
-  const live = openFights(events, now);
+  const live = liveFights(events, bosses.data, now, uuids);
   const liveBy = new Map(live.map((f) => [f.account, f]));
   const t = g.data.totals[win] ?? EMPTY;
   const farming = accounts.map((a) => ({ a, s: accountState(a, liveBy.get(a.uuid)) })).filter((x) => x.s.on);
@@ -61,52 +63,56 @@ export function Home({ group, user, go }: { group: Group; user: User; go: Go }) 
       </section>
 
       <section className="tiles" aria-label="What the group farmed">
-        <Res ico="$" cls="ico-coins" label="Scavenger coins" value={coins(t.coins)} sub={gross > 0 ? `${Math.round((t.coins / gross) * 100)}% of everything farmed` : 'none yet'} />
-        <Res ico="S" cls="ico-string" label="Soul String" value={loot.data ? int(soul.count) : '…'} sub={soul.value > 0 ? `worth ${coins(soul.value)}` : 'none yet'} />
-        <Res ico="E" cls="ico-essence" label="Spider Essence" value={loot.data ? int(ess.count) : '…'} sub={ess.value > 0 ? `worth ${coins(ess.value)}` : 'none yet'} />
-        <Res ico="K" cls="ico-kills" label="Kills" value={int(t.kills)} sub={`${int(t.crystals)} crystals · ${int(t.callings)} callings`} />
+        <Res ico="COINS" cls="ico-coins" label="Scavenger coins" value={coins(t.coins)} sub={gross > 0 ? `${Math.round((t.coins / gross) * 100)}% of everything farmed` : 'none yet'} />
+        <Res ico="SOUL_STRING" cls="ico-string" label="Soul String" value={loot.data ? int(soul.count) : '…'} sub={soul.value > 0 ? `worth ${coins(soul.value)}` : 'none yet'} />
+        <Res ico="ESSENCE_SPIDER" cls="ico-essence" label="Spider Essence" value={loot.data ? int(ess.count) : '…'} sub={ess.value > 0 ? `worth ${coins(ess.value)}` : 'none yet'} />
+        <Res ico="KILL" cls="ico-kills" label="Kills" value={int(t.kills)} sub={`${int(t.crystals)} crystals · ${int(t.callings)} callings`} />
       </section>
 
       <div className="cols">
-        <Card className="col-main" title={<span className="dh2">Who's carrying</span>} side="share of group profit">
-          <div>
-            {ranked.map(({ m, t: mt }, i) => {
-              const mine = m.userId === me;
-              const body = (
-                <>
-                  <span className="px muted">{i + 1}</span>
-                  <Avatar name={m.name} colour={colourAt(i)} />
-                  <span className="mrow-words">
-                    <span className="mrow-name">
-                      <span className="px">{m.name}</span>
-                      {m.role !== 'member' && <span className="muted tiny">{m.role}</span>}
-                      {farmingUsers.has(m.userId) && <span className="live-tag">farming</span>}
+        <div className="col-main stack" style={{ gap: 20 }}>
+          <Card title={<span className="dh2">Who's carrying</span>} side="share of group profit">
+            <div>
+              {ranked.map(({ m, t: mt }, i) => {
+                const mine = m.userId === me;
+                const body = (
+                  <>
+                    <span className="px muted">{i + 1}</span>
+                    <Avatar name={m.name} colour={colourAt(i)} />
+                    <span className="mrow-words">
+                      <span className="mrow-name">
+                        <span className="px">{m.name}</span>
+                        {m.role !== 'member' && <span className="muted tiny">{m.role}</span>}
+                        {farmingUsers.has(m.userId) && <span className="live-tag">farming</span>}
+                      </span>
+                      <span className="bar">
+                        <span style={{ width: `${Math.max(0, Math.round((mt.profit / top) * 100))}%`, background: colourAt(i) }} />
+                      </span>
                     </span>
-                    <span className="bar">
-                      <span style={{ width: `${Math.max(0, Math.round((mt.profit / top) * 100))}%`, background: i === 0 ? 'var(--orange)' : '#8f8f98' }} />
-                    </span>
-                  </span>
-                  <span className="px right">{coins(mt.profit)}</span>
-                  <span className="muted tiny right mrow-rate">{mt.wallUptimeMs > 0 ? `${coins(mt.profitPerWallHour)} / h` : '-'}</span>
-                </>
-              );
-              return mine ? (
-                <a key={m.userId} href="/me" className="mrow" onClick={linkTo(go, '/me')}>
-                  {body}
-                </a>
-              ) : (
-                <div key={m.userId} className="mrow">
-                  {body}
-                </div>
-              );
-            })}
-            {members.some((m) => m.hidden) && (
-              <p className="muted tiny" style={{ padding: '8px' }}>
-                {members.filter((m) => m.hidden).length} member{members.filter((m) => m.hidden).length === 1 ? ' keeps their' : 's keep their'} numbers private, so they're left out of the totals.
-              </p>
-            )}
-          </div>
-        </Card>
+                    <span className="px right">{coins(mt.profit)}</span>
+                    <span className="muted tiny right mrow-rate">{mt.wallUptimeMs > 0 ? `${coins(mt.profitPerWallHour)} / h` : '-'}</span>
+                  </>
+                );
+                return mine ? (
+                  <a key={m.userId} href="/me" className="mrow" onClick={linkTo(go, '/me')}>
+                    {body}
+                  </a>
+                ) : (
+                  <div key={m.userId} className="mrow">
+                    {body}
+                  </div>
+                );
+              })}
+              {members.some((m) => m.hidden) && (
+                <p className="muted tiny" style={{ padding: '8px' }}>
+                  {members.filter((m) => m.hidden).length} member{members.filter((m) => m.hidden).length === 1 ? ' keeps their' : 's keep their'} numbers private, so they're left out of the totals.
+                </p>
+              )}
+            </div>
+          </Card>
+
+          <HourChart series={series.data} uuids={uuids} go={go} />
+        </div>
 
         <aside className="col-side">
           <Card title="Farming now">
@@ -120,7 +126,11 @@ export function Home({ group, user, go }: { group: Group; user: User; go: Go }) 
                     <span className="dot dot-on" />
                     <span className="px grow">{a.name}</span>
                     <span className="muted small">{s.words}</span>
-                    {f && <span className="px hot">{timer(now - f.startedAt)}</span>}
+                    {f && (
+                      <span className="px hot" title={f.confirmations ? `Spawn time agreed by ${f.confirmations} account${f.confirmations === 1 ? '' : 's'}` : undefined}>
+                        {timer(Math.max(0, now - f.startedAt))}
+                      </span>
+                    )}
                   </div>
                 );
               })
@@ -164,17 +174,17 @@ export function Home({ group, user, go }: { group: Group; user: User; go: Go }) 
           </Card>
         </aside>
       </div>
-
-      <HourChart series={series.data} uuids={uuids} go={go} />
     </main>
   );
 }
 
+/** One total with its item picture (src/item-icons.ts). */
 function Res({ ico, cls, label, value, sub }: { ico: string; cls: string; label: string; value: string; sub: string }) {
+  const src = itemIcon(ico);
   return (
     <div className="panel res">
       <span className={`ico ${cls}`} aria-hidden="true">
-        {ico}
+        {src && <img src={src} alt="" width={32} height={32} />}
       </span>
       <span className="res-words">
         <span className="muted small">{label}</span>

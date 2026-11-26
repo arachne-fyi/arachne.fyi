@@ -1,6 +1,8 @@
 /* Data helpers for the new dashboard: one place that turns the server's replies into what the pages show. */
 import type { Totals } from '@arachne/shared';
-import { request, viewingAs, type AccountCard, type FeedEvent, type Fight, type LootRow, type Me, type Series } from '../api.ts';
+import { useEffect } from 'react';
+import { api, request, viewingAs, type AccountCard, type FeedEvent, type Fight, type LiveBoss, type LootRow, type Me, type Series } from '../api.ts';
+import { onBoss, useLive } from '../hooks.ts';
 import type { Group } from '../platform-api.ts';
 
 export type User = NonNullable<Me['user']>;
@@ -57,6 +59,8 @@ export interface LiveFight {
   account: string;
   accountName: string;
   startedAt: number;
+  /** From the mod's instant packets: how many accounts agreed on this spawn time. */
+  confirmations?: number;
 }
 
 /** Spawns with no death or interrupt after them, from the last 5 minutes. Newest first. */
@@ -70,6 +74,43 @@ export function openFights(events: FeedEvent[], now: number): LiveFight[] {
     out.push({ account: e.account, accountName: e.accountName, startedAt: e.ts });
   }
   return out;
+}
+
+/** Live bosses, refetched the moment one spawns or dies. `offset` turns server times into this browser's clock. */
+export interface LiveBosses {
+  bosses: LiveBoss[];
+  offset: number;
+}
+export function useLiveBosses() {
+  const live = useLive(
+    () => api.live().then((r): LiveBosses => ({ bosses: r.bosses, offset: Date.now() - r.serverTime })),
+    [],
+    15_000,
+  );
+  const { refresh } = live;
+  useEffect(() => onBoss(refresh), [refresh]);
+  return live;
+}
+
+/**
+ * Open fights, using the bosses' agreed spawn times where the mod sent them (instant and
+ * cross-checked by every account in the fight), and the batched events for the rest.
+ */
+export function liveFights(events: FeedEvent[], live: LiveBosses | undefined, now: number, accounts?: ReadonlySet<string>): LiveFight[] {
+  const byAccount = new Map(openFights(events, now).map((f) => [f.account, f]));
+  for (const b of [...(live?.bosses ?? [])].reverse()) {
+    for (const a of b.accounts) {
+      if (accounts && !accounts.has(a.uuid)) continue;
+      if (b.deathTs != null) {
+        // Died: stop any timer for this account that started before this death.
+        const f = byAccount.get(a.uuid);
+        if (f && f.startedAt <= b.deathTs + live!.offset) byAccount.delete(a.uuid);
+      } else if (b.spawnTs != null) {
+        byAccount.set(a.uuid, { account: a.uuid, accountName: a.name, startedAt: b.spawnTs + live!.offset, confirmations: b.confirmations });
+      }
+    }
+  }
+  return [...byAccount.values()].sort((x, y) => y.startedAt - x.startedAt);
 }
 
 export interface Kill {

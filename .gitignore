@@ -2,6 +2,7 @@ node_modules/
 dist/
 data/
 data-snapshot/
+data-example/
 .env
 *.log
 .DS_Store

@@ -78,6 +78,6 @@ export async function rebuildIndex(ctx: Context, now = Date.now()): Promise<Rebu
     );
   }
   report.accounts = accounts.size;
-  ctx.stats.invalidate();
+  ctx.stats.dataReplaced();
   return report;
 }

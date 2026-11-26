@@ -36,6 +36,10 @@ CREATE TABLE IF NOT EXISTS events (
 ) WITHOUT ROWID;
 CREATE INDEX IF NOT EXISTS events_account_ts ON events(account, ts);
 CREATE INDEX IF NOT EXISTS events_ts ON events(ts);
+-- One fight's events (recent kills, drop rates), and the loot of one item in time order (dry
+-- streaks, the collection book). Without these, those read every event ever stored.
+CREATE INDEX IF NOT EXISTS events_account_fight ON events(account, fight);
+CREATE INDEX IF NOT EXISTS events_loot_item ON events(item, account, ts) WHERE kind = 'LOOT';
 
 CREATE TABLE IF NOT EXISTS fights (
   account      TEXT NOT NULL,
@@ -52,6 +56,8 @@ CREATE TABLE IF NOT EXISTS fights (
 ) WITHOUT ROWID;
 CREATE INDEX IF NOT EXISTS fights_account_anchor ON fights(account, anchor_ts);
 CREATE INDEX IF NOT EXISTS fights_account_death ON fights(account, death_ts);
+-- Kill times and kill days read straight from the index (the kill rule needs damage and damage_ts).
+CREATE INDEX IF NOT EXISTS fights_account_kill ON fights(account, death_ts, damage, damage_ts);
 
 CREATE TABLE IF NOT EXISTS uptime (
   account TEXT NOT NULL,

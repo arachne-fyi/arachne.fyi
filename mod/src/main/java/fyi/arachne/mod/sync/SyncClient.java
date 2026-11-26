@@ -5,15 +5,18 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import fyi.arachne.mod.skyblock.Lobby;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.HashSet;
+import java.util.Map;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +39,10 @@ import java.util.function.LongSupplier;
  *       and the dashboard's "online" stay current.
  *   <li>On a network error or a 5xx the queue is kept and retried after 15s, 30s, 1m ... up
  *       to 5 minutes.
+ *   <li>A boss spawn or death also goes out at once as its own small packet ({@link #live}),
+ *       so the website's fight timer starts and stops on time. Every account in the fight
+ *       sends one; the server agrees on the time from all of them. After a death the next
+ *       batch goes out within a few seconds, so loot and damage follow quickly.
  *   <li>A rejected token stops sending until the player pairs again. An account the server
  *       says belongs to someone else is skipped; its events stay queued.
  * </ul>
@@ -64,6 +71,8 @@ public final class SyncClient {
     private static final long DEFAULT_POLL_MS = 30_000;
     private static final long MIN_BACKOFF_MS = 15_000;
     private static final long MAX_BACKOFF_MS = 5 * 60_000;
+    /** After a death, flush the batch this soon so loot and damage reach the website quickly. */
+    private static final long AFTER_DEATH_MS = 6_000;
 
     private final EventQueue queue;
     private final String modVersion;
@@ -79,10 +88,12 @@ public final class SyncClient {
     private volatile JsonObject clientState;
 
     // Sync-thread state.
-    private final Set<String> refusedAccounts = new HashSet<>();
+    private final Set<String> refusedAccounts = ConcurrentHashMap.newKeySet();
+    /** Tier of each recent fight, so a death packet carries the same boss key as its spawn. */
+    private final Map<String, String> fightTiers = new ConcurrentHashMap<>();
     private long nextSendAt;
     private long backoffMs;
-    private boolean tokenRejected;
+    private volatile boolean tokenRejected;
     private volatile Status status;
 
     public SyncClient(Settings settings, EventQueue queue, String modVersion, String minecraftVersion, LongSupplier clock) {
@@ -134,6 +145,65 @@ public final class SyncClient {
                 setStatus(status.state(), "Could not write the event queue: " + e.getMessage());
             }
         });
+    }
+
+    /**
+     * Send a SPAWN or DEATH straight away, apart from the batch. Best effort: it does not wait,
+     * is not retried, and the same event still goes out in the next batch, which stays the
+     * record. {@code lobby} is the Hypixel server id, or null when unknown; only a hash of it
+     * is sent.
+     */
+    public void live(String account, String name, JsonObject event, String lobby) {
+        String kind = event.has("kind") ? event.get("kind").getAsString() : "";
+        if (!kind.equals("SPAWN") && !kind.equals("DEATH")) return;
+        if (account == null || !canSend() || refusedAccounts.contains(account)) return;
+        long now = clock.getAsLong();
+        String fight = event.get("fight").getAsString();
+        String tier;
+        if (kind.equals("SPAWN")) {
+            tier = event.has("tier") ? event.get("tier").getAsString() : null;
+            if (tier != null) {
+                if (fightTiers.size() > 64) fightTiers.clear();
+                fightTiers.put(fight, tier);
+            }
+        } else {
+            tier = fightTiers.remove(fight);
+            thread.execute(() -> nextSendAt = Math.min(nextSendAt, clock.getAsLong() + AFTER_DEATH_MS));
+        }
+
+        JsonObject body = new JsonObject();
+        body.addProperty("schema", 1);
+        JsonObject who = new JsonObject();
+        who.addProperty("uuid", account);
+        who.addProperty("name", name);
+        body.add("account", who);
+        JsonObject mod = new JsonObject();
+        mod.addProperty("version", modVersion);
+        mod.addProperty("minecraft", minecraftVersion);
+        body.add("mod", mod);
+        body.addProperty("sentAt", now);
+        body.addProperty("kind", kind);
+        body.addProperty("ts", event.get("ts").getAsLong()); // epoch ms, UTC
+        body.addProperty("fight", fight);
+        if (tier != null) body.addProperty("tier", tier);
+        String key = Lobby.key(lobby, tier);
+        if (key != null) body.addProperty("key", key);
+
+        Settings s = settings;
+        try {
+            HttpRequest req =
+                    HttpRequest.newBuilder(URI.create(s.endpoint + "/api/v1/live"))
+                            .timeout(Duration.ofSeconds(5))
+                            .header("Authorization", "Bearer " + s.token)
+                            .header("Content-Type", "application/json")
+                            .header("User-Agent", userAgent())
+                            .POST(HttpRequest.BodyPublishers.ofString(body.toString()))
+                            .build();
+            // Async: the game thread never waits, and a batch already in flight does not delay it.
+            http.sendAsync(req, HttpResponse.BodyHandlers.discarding());
+        } catch (RuntimeException e) {
+            // A bad endpoint: the batch path reports it.
+        }
     }
 
     /** The account in use right now, or null when not in SkyBlock. Drives heartbeats. */

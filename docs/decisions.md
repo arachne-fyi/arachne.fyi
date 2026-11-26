@@ -99,3 +99,23 @@ locally because the uptime rules need the whole fight history.
 A Discord login from someone not on the allowlist is stored as an access request (Discord
 has confirmed who they are), shown on the Admin page with Let in / Ignore. No public form,
 so nobody can submit someone else's Discord ID.
+
+## Instant spawn and death packets (26 Nov 2026)
+
+The 30-second batch stays the record: every event, the money totals and the HUD's numbers
+come from it, and the reply carries the group's totals back to the in-game HUD. On top of
+that the mod now sends a small packet the moment a boss spawns or dies
+(`POST /api/v1/live`, schema `live-request`), so the website's fight timer starts and stops
+on time instead of up to 30 seconds late. After a death the next batch is sent within 6
+seconds, so the loot follows quickly.
+
+- **Times are epoch ms, UTC**, corrected for clock skew the same way as batches.
+- **Several accounts, one answer.** Every account in the fight sends its own packet. The
+  packet carries `key`, the first 16 hex characters of sha256("lobby|tier"), where the lobby
+  is the server id on the sidebar's top line (`m12AB`). The lobby itself never leaves the
+  PC. Reports with the same key within 8 seconds are one boss; the agreed spawn and death
+  times are the median of the reports, and `confirmations` says how many accounts agreed.
+  Without a lobby the server matches by the sender's group.
+- **Best effort and in memory.** The packet is not queued or retried and the server keeps
+  live bosses for 10 minutes only. If it is lost, the timer falls back to the batched SPAWN.
+  The dashboard listens for the `boss` stream event and reads `GET /api/live`.

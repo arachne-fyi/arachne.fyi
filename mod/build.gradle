@@ -42,7 +42,7 @@ processResources {
 // Check suites are plain main methods (as in v1.5.0). They cover everything that does not
 // need the running game: chat parsing, the tracker's events, the queue, the HUD text.
 // SyncChecks also talks to a real server when ARACHNE_TEST_ENDPOINT/TOKEN are set.
-['Tracker', 'Queue', 'HudText', 'Sync', 'Local', 'Origin'].each { suite ->
+['Tracker', 'Queue', 'HudText', 'Sync', 'Local', 'Origin', 'Lobby'].each { suite ->
     def verification = tasks.register("verify${suite}", JavaExec) {
         group = 'verification'
         description = "Run the ${suite} checks."

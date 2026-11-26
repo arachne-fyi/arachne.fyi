@@ -32,7 +32,7 @@ export function purgeData(ctx: Context, everything: boolean): { files: number } 
       putSetting(ctx, 'teamGoal', null);
     }
   });
-  ctx.stats.invalidate();
+  ctx.stats.dataReplaced();
   return { files };
 }
 

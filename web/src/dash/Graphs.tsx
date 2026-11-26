@@ -1,4 +1,5 @@
-/* Graphs (Pro): each member as a line over 7 days, today's projection, where the profit comes from, your drops against the wiki. */
+/* Graphs (Pro): each member as a line over 7 days, today's projection, where the profit comes from, time to kill,
+   your farming days and best hours, Bazaar prices, and your drops against the wiki. */
 import { useState, type PointerEvent } from 'react';
 import { api, type DropRates } from '../api.ts';
 import { coins, dateTime, dayLabel } from '../format.ts';
@@ -8,6 +9,8 @@ import { platform, type Group } from '../platform-api.ts';
 import { ESSENCE, SOUL, groupLoot, lootOf, startOfUtcDay, sumSeries, type User } from './data.ts';
 import { Card, Loading, ProLock, colourAt } from './ui.tsx';
 import type { Go } from './App.tsx';
+import { itemIcon } from '../item-icons.ts';
+import { CalendarCard, CalendarView, HeatmapCard, HeatmapView, PriceCard, PriceView, TtkCard, TtkView, exampleCalendar, exampleHeat, examplePrices, exampleTtk } from './MoreGraphs.tsx';
 
 interface Lines {
   from: number;
@@ -23,11 +26,14 @@ interface Projection {
 }
 interface Source {
   name: string;
+  /** Item ID for its picture (src/item-icons.ts), if it has one. */
+  item?: string;
   value: number;
   colour: string;
 }
 interface Rate {
   name: string;
+  item?: string;
   you: number;
   wiki: number;
   kills: number;
@@ -97,9 +103,9 @@ function Real({ group, user: _user }: { group: Group; user: User }) {
   const soul = lootOf(loot.data?.loot, SOUL);
   const ess = lootOf(loot.data?.loot, ESSENCE);
   const sources: Source[] = [
-    { name: 'Soul String', value: soul.value, colour: '#9fc2ff' },
-    { name: 'Scavenger coins', value: t.coins, colour: 'var(--orange)' },
-    { name: 'Spider Essence', value: ess.value, colour: '#d7bcff' },
+    { name: 'Soul String', item: 'SOUL_STRING', value: soul.value, colour: '#9fc2ff' },
+    { name: 'Scavenger coins', item: 'COINS', value: t.coins, colour: 'var(--orange)' },
+    { name: 'Spider Essence', item: 'ESSENCE_SPIDER', value: ess.value, colour: '#d7bcff' },
     { name: 'Everything else', value: Math.max(0, t.lootValue - soul.value - ess.value), colour: '#55555c' },
   ];
 
@@ -110,6 +116,16 @@ function Real({ group, user: _user }: { group: Group; user: User }) {
         <ProjectionCard p={projection} />
         <SourcesCard sources={sources} ready={!!loot.data} />
       </div>
+      <TtkCard group={group} />
+      <div className="cols">
+        <div className="col-half">
+          <CalendarCard />
+        </div>
+        <div className="col-half">
+          <HeatmapCard />
+        </div>
+      </div>
+      <PriceCard />
       <RatesCard rows={rates.data ? ratesOf(rates.data) : null} error={rates.error} />
     </>
   );
@@ -120,7 +136,7 @@ function ratesOf(d: DropRates): Rate[] {
   for (const tier of d.tiers) {
     for (const it of tier.items) {
       if ((it.item !== SOUL && it.item !== ESSENCE) || !it.wikiAmount) continue;
-      out.push({ name: `${it.item === SOUL ? 'Soul String' : 'Spider Essence'} a ${tier.tier === 'CRYSTAL' ? 'crystal' : 'callings'} kill`, you: it.perKill, wiki: (it.wikiAmount.min + it.wikiAmount.max) / 2, kills: tier.kills });
+      out.push({ name: `${it.item === SOUL ? 'Soul String' : 'Spider Essence'} a ${tier.tier === 'CRYSTAL' ? 'crystal' : 'callings'} kill`, item: it.item, you: it.perKill, wiki: (it.wikiAmount.min + it.wikiAmount.max) / 2, kills: tier.kills });
     }
   }
   return out;
@@ -224,6 +240,7 @@ function SourcesCard({ sources, ready }: { sources: Source[]; ready: boolean }) 
           {sources.map((s) => (
             <div className="liverow" key={s.name}>
               <span className="dot" style={{ background: s.colour }} />
+              <ItemPic item={s.item} />
               <span className="grow">{s.name}</span>
               <span className="muted small">{Math.round((s.value / total) * 100)}%</span>
               <span className="px">{coins(s.value)}</span>
@@ -248,7 +265,10 @@ function RatesCard({ rows, error, example }: { rows: Rate[] | null; error?: stri
             const diff = r.wiki > 0 ? r.you / r.wiki - 1 : 0;
             return (
               <div className="stack" style={{ gap: 4 }} key={r.name}>
-                <span className="muted small">{r.name}</span>
+                <span className="muted small item-line">
+                  <ItemPic item={r.item} />
+                  {r.name}
+                </span>
                 <span>
                   <span className="px res-value">{r.you >= 10 ? Math.round(r.you).toLocaleString('en-GB') : r.you.toFixed(1)}</span>{' '}
                   <span className="muted small">vs {r.wiki >= 10 ? Math.round(r.wiki).toLocaleString('en-GB') : r.wiki.toFixed(1)} on the wiki</span>
@@ -264,6 +284,12 @@ function RatesCard({ rows, error, example }: { rows: Rate[] | null; error?: stri
       )}
     </Card>
   );
+}
+
+/** A small item picture, when there is one (src/item-icons.ts). */
+function ItemPic({ item }: { item?: string }) {
+  const src = item ? itemIcon(item) : null;
+  return src ? <img className="item-pic" src={src} alt="" width={20} height={20} /> : null;
 }
 
 // ---- example data for the free plan's locked preview ----
@@ -282,15 +308,15 @@ function Example() {
   let r = 0;
   const p: Projection = { soFar: Array.from({ length: 20 }, (_, i) => (r += i < 7 ? 0 : 2_800_000 + (i % 3) * 600_000)), dayGone: 0.8, now, projected: 52_000_000 };
   const sources: Source[] = [
-    { name: 'Soul String', value: 128_000_000, colour: '#9fc2ff' },
-    { name: 'Scavenger coins', value: 118_000_000, colour: 'var(--orange)' },
-    { name: 'Spider Essence', value: 37_000_000, colour: '#d7bcff' },
+    { name: 'Soul String', item: 'SOUL_STRING', value: 128_000_000, colour: '#9fc2ff' },
+    { name: 'Scavenger coins', item: 'COINS', value: 118_000_000, colour: 'var(--orange)' },
+    { name: 'Spider Essence', item: 'ESSENCE_SPIDER', value: 37_000_000, colour: '#d7bcff' },
     { name: 'Everything else', value: 28_000_000, colour: '#55555c' },
   ];
   const rates: Rate[] = [
-    { name: 'Soul String a crystal kill', you: 6.1, wiki: 6, kills: 0 },
-    { name: 'Spider Essence a crystal kill', you: 304, wiki: 300, kills: 0 },
-    { name: 'Soul String a callings kill', you: 1.9, wiki: 2, kills: 0 },
+    { name: 'Soul String a crystal kill', item: 'SOUL_STRING', you: 6.1, wiki: 6, kills: 0 },
+    { name: 'Spider Essence a crystal kill', item: 'ESSENCE_SPIDER', you: 304, wiki: 300, kills: 0 },
+    { name: 'Soul String a callings kill', item: 'SOUL_STRING', you: 1.9, wiki: 2, kills: 0 },
   ];
   return (
     <>
@@ -309,6 +335,24 @@ function Example() {
           </ProLock>
         </div>
       </div>
+      <ProLock what="Average time to kill, with or without the crystal's spawn-in, by day and as a spread.">
+        <TtkView data={exampleTtk()} spawn={false} controls={null} />
+      </ProLock>
+      <div className="cols">
+        <div className="col-half">
+          <ProLock what="Every day you farmed over the last half year.">
+            <CalendarView days={exampleCalendar()} />
+          </ProLock>
+        </div>
+        <div className="col-half">
+          <ProLock what="Which hours of the week make you the most.">
+            <HeatmapView cells={exampleHeat()} />
+          </ProLock>
+        </div>
+      </div>
+      <ProLock what="Soul String, Essence and Fragment prices over 30 days.">
+        <PriceView points={examplePrices()} item="SOUL_STRING" setItem={() => undefined} />
+      </ProLock>
       <ProLock what="Your Soul String and Essence per kill against the wiki's numbers.">
         <RatesCard rows={rates} example />
       </ProLock>

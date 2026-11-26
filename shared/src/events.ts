@@ -135,6 +135,35 @@ export const BatchRequest = z.object({
 });
 export type BatchRequest = z.infer<typeof BatchRequest>;
 
+/**
+ * POST /api/v1/live: one small packet the moment a boss spawns or dies, so the website's fight
+ * timer starts and stops on time instead of waiting up to 30s for the next batch. Best effort:
+ * the same SPAWN/DEATH still goes in a batch, which stays the stored record.
+ *
+ * Several accounts fighting the same boss each send one. `key` is how the server tells it is
+ * the same boss: a hash of the lobby (server id from the sidebar) and the summon tier, so two
+ * reports with the same key a few seconds apart are one boss. The server then takes the median
+ * of their (clock-skew corrected) times as the boss's spawn and death.
+ */
+export const LiveRequest = z.object({
+  schema: z.literal(SCHEMA_VERSION),
+  account: z.object({ uuid, name: z.string().regex(/^[A-Za-z0-9_]{1,16}$/) }),
+  mod: z.object({ version: z.string().max(32), minecraft: z.string().max(32) }),
+  sentAt: ts,
+  kind: z.enum(['SPAWN', 'DEATH']),
+  /** When it happened on the client: epoch ms, UTC. */
+  ts,
+  /** This account's fight id, the same as on its SPAWN/DEATH events. */
+  fight: fightId,
+  tier: SummonTier.optional(),
+  /** 16 hex characters: sha256("<lobby>|<tier>"). Missing when the lobby couldn't be read. */
+  key: z
+    .string()
+    .regex(/^[0-9a-f]{16}$/)
+    .optional(),
+});
+export type LiveRequest = z.infer<typeof LiveRequest>;
+
 /** One scope's numbers over one time window. */
 export const Totals = z.object({
   kills: z.number(),

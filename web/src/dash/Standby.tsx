@@ -9,7 +9,8 @@ import { api, type Series } from '../api.ts';
 import { ago, coins, duration, int, shortClock } from '../format.ts';
 import { useLive, useNow } from '../hooks.ts';
 import { platform, type Group } from '../platform-api.ts';
-import { ESSENCE, SOUL, killsOf, lootOf, meId, openFights, startOfUtcDay, sumSeries, tierWord, timer, type User } from './data.ts';
+import { savedSpawnPref, secs, ttkOf } from './MoreGraphs.tsx';
+import { ESSENCE, SOUL, killsOf, liveFights, lootOf, meId, startOfUtcDay, sumSeries, tierWord, timer, useLiveBosses, type User } from './data.ts';
 
 type Kind =
   | 'profit'
@@ -28,7 +29,10 @@ type Kind =
   | 'hourly'
   | 'killsHourly'
   | 'days'
-  | 'month';
+  | 'month'
+  | 'ttk'
+  | 'ttkSpawn'
+  | 'ttkHourly';
 /** Every widget, with its label and whether it is a number or a graph (the picker groups them). */
 const KINDS: [Kind, string, 'number' | 'graph'][] = [
   ['profit', 'Profit today', 'number'],
@@ -43,11 +47,14 @@ const KINDS: [Kind, string, 'number' | 'graph'][] = [
   ['group', 'Group today', 'number'],
   ['week', 'Profit, last 7 days', 'number'],
   ['time', 'Farming today', 'number'],
+  ['ttk', 'Kill time, 24h', 'number'],
+  ['ttkSpawn', 'Kill time with spawn-in, 24h', 'number'],
   ['graph', 'Profit, last 24h', 'graph'],
   ['hourly', 'Profit each hour', 'graph'],
   ['killsHourly', 'Kills each hour', 'graph'],
   ['days', 'Profit each day', 'graph'],
   ['month', 'Profit, last 30 days', 'graph'],
+  ['ttkHourly', 'Kill time each hour', 'graph'],
 ];
 const isGraph = (k: Kind) => KINDS.some(([x, , g]) => x === k && g === 'graph');
 type Slots = 1 | 2 | 4 | 6;
@@ -93,6 +100,8 @@ interface Chart {
   axis: [string, string, string];
   /** Bars that are counts, not coins (for the screen reader text). */
   count?: boolean;
+  /** How to say a value, when it is neither coins nor a count (kill times). */
+  say?: (v: number) => string;
 }
 interface View {
   value: string;
@@ -132,6 +141,8 @@ export function Standby({ user, group, exit }: { user: User; group: Group | null
   const day = useLive(() => (needs('graph', 'hourly', 'killsHourly') ? api.series('24h') : Promise.resolve(null)), [needs('graph', 'hourly', 'killsHourly')], 60_000);
   const week = useLive(() => (needs('days') ? api.series('7d') : Promise.resolve(null)), [needs('days')], 120_000);
   const month = useLive(() => (needs('month') ? api.series('30d') : Promise.resolve(null)), [needs('month')], 300_000);
+  const bosses = useLiveBosses();
+  const ttk = useLive(() => (needs('ttk', 'ttkSpawn', 'ttkHourly') ? api.ttk('me', 1) : Promise.resolve(null)), [needs('ttk', 'ttkSpawn', 'ttkHourly')], 30_000);
 
   const mine = new Set((ov.data?.accounts ?? []).filter((a) => a.userId === me).map((a) => a.uuid));
   const t = ov.data?.totals.user;
@@ -139,6 +150,19 @@ export function Standby({ user, group, exit }: { user: User; group: Group | null
   const big = board.slots <= 2;
 
   const graphView = (kind: Kind): View => {
+    if (kind === 'ttkHourly') {
+      const d = ttk.data;
+      if (!d) return { value: '…', chart: null };
+      // The same choice as the Graphs page's "Include spawn-in" switch, remembered in this browser.
+      const withSpawn = savedSpawnPref();
+      const pts = d.buckets.map((b) => ({ start: b.start, v: ttkOf(b.avgFightMs, b.avgSpawnMs, d.avgSpawnMs, withSpawn) }));
+      const latest = pts[pts.length - 1];
+      return {
+        value: latest ? secs(latest.v) : '-',
+        sub: d.kills > 0 ? `${withSpawn ? 'with spawn-in' : 'spawn to death'} · 24h average ${secs(ttkOf(d.avgFightMs ?? 0, d.avgSpawnMs, null, withSpawn))}` : 'no kills in 24h',
+        chart: pts.length ? { type: 'bars', points: pts, axis: [shortClock(pts[0]!.start), shortClock(pts[Math.floor(pts.length / 2)]!.start), 'now'], say: secs } : null,
+      };
+    }
     // The series name accounts by uuid; until the overview says which are yours there is nothing to sum.
     const s = kind === 'days' ? week.data : kind === 'month' ? month.data : day.data;
     if (!s || !ov.data) return { value: '…', chart: null };
@@ -182,6 +206,16 @@ export function Standby({ user, group, exit }: { user: User; group: Group | null
 
   const view = (kind: Kind): View => {
     if (isGraph(kind)) return graphView(kind);
+    if (kind === 'ttk' || kind === 'ttkSpawn') {
+      const d = ttk.data;
+      if (!d) return { value: '…' };
+      if (d.kills === 0 || d.avgFightMs == null) return { value: '-', sub: 'no kills in 24h' };
+      const withSpawn = kind === 'ttkSpawn';
+      return {
+        value: secs(ttkOf(d.avgFightMs, d.avgSpawnMs, null, withSpawn)),
+        sub: withSpawn ? `${secs(d.avgFightMs)} fight + ${secs(d.avgSpawnMs)} spawn-in` : `fastest ${secs(d.bestFightMs)} · ${int(d.kills)} kills`,
+      };
+    }
     if (kind === 'clock') {
       return { value: new Date(now).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), sub: new Date(now).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' }) };
     }
@@ -208,8 +242,11 @@ export function Standby({ user, group, exit }: { user: User; group: Group | null
         return { value: loot.data ? int(s.count) : '…', sub: t.today.kills ? `about ${int(s.count / t.today.kills)} a kill` : undefined };
       }
       case 'fight': {
-        const open = openFights(events, now)[0];
-        if (open) return { value: timer(now - open.startedAt), sub: open.accountName, hot: true };
+        const open = liveFights(events, bosses.data, now, mine)[0];
+        if (open) {
+          const agreed = open.confirmations && open.confirmations > 1 ? ` · ${open.confirmations} accounts agree` : '';
+          return { value: timer(Math.max(0, now - open.startedAt)), sub: `${open.accountName}${agreed}`, hot: true };
+        }
         const last = events.find((e) => e.kind === 'DEATH');
         return { value: '-', sub: last ? `last kill ${ago(last.ts, now)}` : 'no fight' };
       }
@@ -388,7 +425,8 @@ function Graph({ chart, label }: { chart: Chart; label: string }) {
   const min = Math.min(0, ...vals);
   const y = (v: number) => 47 - ((v - min) / (max - min)) * 44;
   const zero = y(0);
-  const spoken = `${label}: ${chart.count ? int(vals[vals.length - 1] ?? 0) : coins(vals[vals.length - 1] ?? 0)} latest, ${chart.count ? int(max) : coins(max)} highest`;
+  const say = chart.say ?? (chart.count ? int : coins);
+  const spoken = `${label}: ${say(vals[vals.length - 1] ?? 0)} latest, ${say(max)} highest`;
   return (
     <span className="sb-graph">
       <svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img" aria-label={spoken}>
